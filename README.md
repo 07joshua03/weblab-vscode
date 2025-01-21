@@ -1,71 +1,46 @@
-# weblab-vscode README
+# WebLab functionality for Visual Studio Code
 
-This is the README for your extension "weblab-vscode". After writing up a brief description, we recommend including the following sections.
+Tired of using the default WebLab editor? Me too! This extension brings the WebLab environment right into Visual Studio Code.This is the README for your extension "weblab-vscode". After writing up a brief description, we recommend including the following sections.
+
+## Disclaimer
+**This extension does not work yet! It is very much W.I.P. and is not ready for use. Please do not install it yet.**
+
+This extension is not affiliated with WebLab in any way. It is a personal project and is not endorsed by WebLab.
+
+Because WebLab is closed-source, this extension uses some 'questionable' methods to make WebLab work within VS Code. It runs WebLab in a headless Chromium browser and uses Playwright to retrieve, modify and send data to the WebLab editor. This means that the extension is not very stable and may break at any time, and can use a significant amount of system resources.
 
 ## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Some notable features include:
+- Sidebar: Find all your courses, assignments and files in the WebLab sidebar
+- File structure: Auto import solution code to your file system, whilst keeping the WebLab file structure
+- WebLab Library support: Emulates the given WebLab libraries in the editor
+... with all the benefits of VS code.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Install the specific Playwright version (1.38.0) (using npm playwright install ?)
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Not for now :(
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- The extension is not very stable and may break at any time
+
+Please let me know :)
 
 ## Release Notes
 
 Users appreciate release notes as you update your extension.
 
-### 1.0.0
+### 0.0.1 pre-alpha
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+It doesn't even work yet
 
 ---
 
-## Following extension guidelines
+## Questions
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+'' Why no Intellij plugin? ''
+A: Because VS-code extensions are way easier to write in my opinion.
