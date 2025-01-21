@@ -12,14 +12,35 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "course-explorer",
+          "title": "WebLab",
+          "icon": "resources/tud_flame.svg"
+        }
+      ]
+    },
+    "views": {
+      "course-explorer": [
+        {
+          "id": "courses",
+          "name": "WebLab"
+        }
+      ]
+    },
     "commands": [
-      {
-        "command": "weblab-vscode.helloWorld",
-        "title": "Hello World"
-      },
       {
         "command": "weblab-vscode.login",
         "title": "Login to WebLab"
+      },
+      {
+        "command": "weblab-vscode.showCourses",
+        "title": "Show WebLab courses"
+      },
+      {
+        "command": "weblab-vscode.isLoggedIn",
+        "title": "Check if logged in to WebLab"
       }
     ]
   },

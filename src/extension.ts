@@ -1,35 +1,34 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { chromium } from 'playwright';
+import { Browser, chromium, Locator } from 'playwright';
+import { CourseProvider } from './courseProvider';
+import { BrowserManager } from './browserManager';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+	const browser: Browser = await chromium.launch({headless: false});
+	const browserContext = await browser.newContext();
+	const browserManager = new BrowserManager(context, browserContext);
+
+	// Sidebar implementation
+	const courseProvider = new CourseProvider(browserManager);
+	vscode.window.registerTreeDataProvider('courses', courseProvider);
+	const view = vscode.window.createTreeView('courses', {treeDataProvider: courseProvider});
+	context.subscriptions.push(view);
+
+	const login = vscode.commands.registerCommand('weblab-vscode.login', async () => {
+		await browserManager.login();
+	});
+	context.subscriptions .push(login);
 	
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "weblab-vscode" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('weblab-vscode.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from weblab-vscode!');
+	const showCourses = vscode.commands.registerCommand('weblab-vscode.showCourses', async () => {
+		const courses = await courseProvider.getCourses();
+		vscode.window.showInformationMessage(courses.join(', '));
 	});
+	context.subscriptions.push(showCourses);
 
-	const disposablePlaywright = vscode.commands.registerCommand('weblab-vscode.login', async () => {
-		const browser = await chromium.launch({headless: false});
-		const page = await browser.newPage();
-		await page.goto('https://weblab.tudelft.nl/');
-		await page.waitForURL('https://google.com/');
-		await browser.close();
+	const isLoggedIn = vscode.commands.registerCommand('weblab-vscode.isLoggedIn', async () => {
+		vscode.window.showInformationMessage(await browserManager.loggedIn() ? 'Logged in' : 'Not logged in');
 	});
-	context.subscriptions.push(disposable);
-	context.subscriptions.push(disposablePlaywright);
+	context.subscriptions.push(isLoggedIn);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
