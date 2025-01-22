@@ -82,6 +82,11 @@ class Assignment extends TreeItem {
         this.description = type;
         this.type = type;
         this.tooltip = link;
+        this.command = {
+            "title": "Open solution",
+            "command": "weblab-vscode.openAssignment",
+            "arguments": [link]
+        };
     }
     getChildren(_browserManager: BrowserManager): Promise<TreeItem[]> {
         return Promise.resolve([]);
