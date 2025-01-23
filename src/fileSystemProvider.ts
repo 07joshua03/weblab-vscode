@@ -52,6 +52,22 @@ export class WebLabFs implements vscode.FileSystemProvider {
 
 	root = new Directory('');
 
+	registerFileSystemProvider(context: vscode.ExtensionContext) {
+		context.subscriptions.push(vscode.workspace.registerFileSystemProvider('weblabfs', this, { isCaseSensitive: true }));
+	}
+
+	registerCommands(context: vscode.ExtensionContext) {
+		context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.resetFs', _ => {
+			for (const [name] of this.readDirectory(vscode.Uri.parse('weblabfs:/'))) {
+				this.delete(vscode.Uri.parse(`weblabfs:/${name}`));
+			}
+		}));
+
+		context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.initFs', _ => {
+			vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('weblabfs:/'), name: "WebLab Workspace" });
+		}));
+	}
+
 	// --- manage file metadata
 
 	stat(uri: vscode.Uri): vscode.FileStat {
@@ -68,6 +84,33 @@ export class WebLabFs implements vscode.FileSystemProvider {
 	}
 
 	// --- manage file contents
+
+	async openFile(file: vscode.Uri) {
+		await vscode.workspace.openTextDocument(file).then(doc => {
+			vscode.window.showTextDocument(doc);
+		});;
+	}
+
+	createFile(filename: string, data: string) {
+		let prevFolder = "";
+		this.createParentFolders(filename, true);
+		this.writeFile(vscode.Uri.parse(`weblabfs:/${filename}`), Buffer.from(data), { create: true, overwrite: true });
+	}
+
+	createParentFolders(fileLocation: string, recursive: boolean) {
+		if (recursive) {
+			let prevFolder = "";
+			fileLocation.split("/").slice(0, -1).forEach(folder => {
+				const folderLocation = prevFolder === "" ? folder : `${prevFolder}/${folder}`;
+				if (!(this._lookup(vscode.Uri.parse(`weblabfs:/${folderLocation}`), true) instanceof Directory)) {
+					this.createDirectory(vscode.Uri.parse(`weblabfs:/${folderLocation}`));
+				}
+				prevFolder = folderLocation;
+			});
+		} else if (!(this._lookup(vscode.Uri.parse(`weblabfs:/${fileLocation}`), true) instanceof Directory)) {
+			this.createDirectory(vscode.Uri.parse(`weblabfs:/${fileLocation}`));
+		}
+	}
 
 	readFile(uri: vscode.Uri): Uint8Array {
 		const data = this._lookupAsFile(uri, false).data;
@@ -152,6 +195,14 @@ export class WebLabFs implements vscode.FileSystemProvider {
 	}
 
 	// --- lookup
+
+	public fileExists(uri: vscode.Uri): boolean {
+		return this._lookup(uri, true) instanceof File;
+	}
+
+	public folderExists(uri: vscode.Uri): boolean {
+		return this._lookup(uri, true) instanceof Directory;
+	}
 
 	private _lookup(uri: vscode.Uri, silent: false): Entry;
 	private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined;

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      diff:
+        specifier: ^7.0.0
+        version: 7.0.0
       playwright:
         specifier: 1.38.0
         version: 1.38.0
@@ -358,6 +361,10 @@ packages:
 
   diff@5.2.0:
     resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
+    engines: {node: '>=0.3.1'}
+
+  diff@7.0.0:
+    resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
     engines: {node: '>=0.3.1'}
 
   eastasianwidth@0.2.0:
@@ -1344,6 +1351,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   diff@5.2.0: {}
+
+  diff@7.0.0: {}
 
   eastasianwidth@0.2.0: {}
 

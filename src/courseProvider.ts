@@ -1,12 +1,31 @@
 import * as vscode from "vscode";
-import { BrowserManager } from "./browserManager";
+import { BrowserProvider } from "./browserProvider";
 import { Locator, Page } from "playwright";
 import { open } from "fs";
 export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
-    private browserManager: BrowserManager;
+    private browserManager: BrowserProvider;
 
-    constructor(browserManager: BrowserManager) {
+    constructor(browserManager: BrowserProvider) {
         this.browserManager = browserManager;
+    }
+
+    registerTreeDataProvider(context: vscode.ExtensionContext) {
+        vscode.window.registerTreeDataProvider("courses", this);
+        const view = vscode.window.createTreeView("courses", {
+            treeDataProvider: this,
+        });
+        context.subscriptions.push(view);
+    }
+
+    registerCommands(context: vscode.ExtensionContext) {
+        const showCourses = vscode.commands.registerCommand(
+            "weblab-vscode.showCourses",
+            async () => {
+                const courses = await this.getCourses();
+                vscode.window.showInformationMessage(courses.join(", "));
+            }
+        );
+        context.subscriptions.push(showCourses);
     }
 
     getTreeItem(element: TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -39,7 +58,7 @@ export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
                 .locator("> div.row.assignment-row.root > div > a > strong")
                 .innerText();
             const courseResult = new Course(
-                courseRootName,
+                courseRootName.trim(),
                 courseLocatorString,
                 courseId
             );
@@ -50,7 +69,7 @@ export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
     }
 }
 abstract class TreeItem extends vscode.TreeItem {
-    private link: string;
+    public link: string;
     constructor(
         public readonly label: string,
         link: string,
@@ -68,39 +87,45 @@ abstract class TreeItem extends vscode.TreeItem {
         return this.link;
     }
 
-    abstract getChildren(browserManager: BrowserManager): Promise<TreeItem[]>;
+    abstract getChildren(browserManager: BrowserProvider): Promise<TreeItem[]>;
 }
 
-class Assignment extends TreeItem {
+export class Assignment extends TreeItem {
     type: string;
+    folderLocation: string;
     constructor(
         public readonly label: string,
         link: string,
-        type: string
+        type: string,
+        folderLocation: string = ""
     ) {
         super(label, link, vscode.TreeItemCollapsibleState.None, type);
         this.description = type;
+        this.contextValue = "assignment";
         this.type = type;
         this.tooltip = link;
+        this.folderLocation = folderLocation;
         this.command = {
             "title": "Open solution",
             "command": "weblab-vscode.openAssignment",
-            "arguments": [link]
+            "arguments": [this]
         };
     }
-    getChildren(_browserManager: BrowserManager): Promise<TreeItem[]> {
+    getChildren(_browserManager: BrowserProvider): Promise<TreeItem[]> {
         return Promise.resolve([]);
     }
 }
 
 class AssignmentFolder extends TreeItem {
     private locatorId: string;
+    private folderLocation: string;
     private parent: AssignmentFolder | null;
     constructor(
         public readonly label: string,
         locatorId: string,
         link: string,
-        parent: AssignmentFolder | null = null
+        parent: AssignmentFolder | null = null,
+        folderLocation: string = ""
     ) {
         super(label, link, vscode
             .TreeItemCollapsibleState.Collapsed);
@@ -108,6 +133,7 @@ class AssignmentFolder extends TreeItem {
         this.tooltip = link;
         this.description = this.label;
         this.parent = parent;
+        this.folderLocation = folderLocation;
     }
 
     async openCollapsible(page: Page) {
@@ -123,7 +149,7 @@ class AssignmentFolder extends TreeItem {
         await page.waitForTimeout(200);
     }
 
-    async getChildren(browserManager: BrowserManager): Promise<TreeItem[]> {
+    async getChildren(browserManager: BrowserProvider): Promise<TreeItem[]> {
         const username: string = await browserManager.getUsername();
 
         const page = await browserManager.getBrowserContext().newPage();
@@ -150,15 +176,16 @@ class AssignmentFolder extends TreeItem {
                 )
                 .getAttribute("href") ?? "";
             // Check whether it is a assignment folder or an individual assignment
-            if (!( await page
+            if (!(await page
                 .locator(
                     `div[id="${id}"]> div.row.assignment-row > div > a[submitid^="treenode"]`
                 ).first().getAttribute("class") === "reload-me")) {
                 const assignmentResult = new AssignmentFolder(
-                    name,
+                    name.trim(),
                     id,
                     link,
-                    this
+                    this,
+                    this.folderLocation + "/" + this.label
                 );
                 assignments.push(assignmentResult);
             } else {
@@ -167,9 +194,10 @@ class AssignmentFolder extends TreeItem {
                         `div[id="${id}"]> div.row.assignment-row > div > a.navigate > span`
                     ).getAttribute("data-original-title") ?? "";
                 const assignmentResult = new Assignment(
-                    name,
+                    name.trim(),
                     link,
-                    assignmentType
+                    assignmentType,
+                    this.folderLocation + "/" + name.trim()
                 );
                 assignments.push(assignmentResult);
             }
@@ -190,7 +218,7 @@ class Course extends TreeItem {
         this.description = this.label;
     }
 
-    async getChildren(browserManager: BrowserManager): Promise<TreeItem[]> {
+    async getChildren(browserManager: BrowserProvider): Promise<TreeItem[]> {
         const username: string = await browserManager.getUsername();
 
         const page = await browserManager.getBrowserContext().newPage();
@@ -208,9 +236,9 @@ class Course extends TreeItem {
                 (await assignmentLocator.getAttribute("id")) ?? "";
 
             const assignmentFolderLink: string = await page
-            .locator(
-                `div[id="${assignmentFolderId}"]> div.row.assignment-row > div > a.navigate`
-            ).getAttribute("href") ?? "";
+                .locator(
+                    `div[id="${assignmentFolderId}"]> div.row.assignment-row > div > a.navigate`
+                ).getAttribute("href") ?? "";
 
             const assignmentFolderName: string = await page
                 .locator(
@@ -219,9 +247,11 @@ class Course extends TreeItem {
                 .innerText();
 
             const assignmentResult = new AssignmentFolder(
-                assignmentFolderName,
+                assignmentFolderName.trim(),
                 assignmentFolderId,
-                assignmentFolderLink
+                assignmentFolderLink,
+                null,
+                this.label
             );
             assignments.push(assignmentResult);
         }
