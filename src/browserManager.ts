@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 export class BrowserManager {
     private context: vscode.ExtensionContext;
     private browserContext: BrowserContext;
+    private loggedIn: boolean = false;
 
     constructor(
         context: vscode.ExtensionContext,
@@ -35,25 +36,25 @@ export class BrowserManager {
         await page.fill('input[name="password"]', password);
         await page.click('button[type="submit"]');
         await page.waitForURL("https://weblab.tudelft.nl");
-
+        this.loggedIn = true;
         await page.close();
         return username;
     }
 
-    async loggedIn(): Promise<boolean> {
-        let username: string | undefined =
-            this.context.workspaceState.get("username");
-        if (!username) {
-            return false;
-        }
-        const page = await this.browserContext.newPage();
-        await page.goto("https://weblab.tudelft.nl/profile/" + username, {
-            waitUntil: "networkidle",
-        });
-        const loggedIn =
-            page.url() === "https://weblab.tudelft.nl/profile/" + username;
-        await page.close();
-        return loggedIn;
+    async isLoggedIn(): Promise<boolean> {
+        // let username: string | undefined =
+        //     this.context.workspaceState.get("username");
+        // if (!username) {
+        //     return false;
+        // }
+        // const page = await this.browserContext.newPage();
+        // await page.goto("https://weblab.tudelft.nl/profile/" + username, {
+        //     waitUntil: "networkidle",
+        // });
+        // const loggedIn =
+        //     page.url() === "https://weblab.tudelft.nl/profile/" + username;
+        // await page.close();
+        return this.loggedIn;
     }
 
     /**
@@ -63,7 +64,7 @@ export class BrowserManager {
     async getUsername(): Promise<string> {
         let username: string | undefined =
             this.context.workspaceState.get("username");
-        if (!username || !(await this.loggedIn())) {
+        if (!username || !(await this.isLoggedIn())) {
             username = await this.login();
         }
         return username;

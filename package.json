@@ -9,7 +9,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onFileSystem:weblabfs"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -25,7 +27,8 @@
       "course-explorer": [
         {
           "id": "courses",
-          "name": "WebLab"
+          "name": "WebLab",
+          "when": "extensionEnabled"
         }
       ]
     },
@@ -41,6 +44,30 @@
       {
         "command": "weblab-vscode.isLoggedIn",
         "title": "Check if logged in to WebLab"
+      },
+      {
+        "command": "weblab-vscode.openAssignment",
+        "title": "Open WebLab assignment"
+      },
+      {
+        "command": "weblab-vscode.initFs",
+        "title": "Start WebLab workspace"
+      },
+      {
+        "command": "weblab-vscode.resetFs",
+        "title": "Reset WebLab workspace"
+      },
+      {
+        "command": "weblab-vscode.addFile",
+        "title": "Add file to WebLab workspace"
+      },
+      {
+        "command": "weblab-vscode.openBrowser",
+        "title": "Open WebLab browser"
+      },
+      {
+        "command": "weblab-vscode.openFile",
+        "title": "Open file in WebLab workspace"
       }
     ]
   },
