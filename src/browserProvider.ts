@@ -1,7 +1,7 @@
 import { Browser, BrowserContext, chromium } from "playwright";
 import * as vscode from "vscode";
 
-export class BrowserManager {
+export class BrowserProvider {
     private context: vscode.ExtensionContext;
     private browserContext: BrowserContext;
     private loggedIn: boolean = false;
@@ -12,6 +12,36 @@ export class BrowserManager {
     ) {
         this.context = context;
         this.browserContext = browserContext;
+    }
+
+    registerCommands(context: vscode.ExtensionContext) {
+        const login = vscode.commands.registerCommand(
+            "weblab-vscode.login",
+            async () => {
+                await this.login();
+            }
+        );
+        context.subscriptions.push(login);
+
+        const isLoggedIn = vscode.commands.registerCommand(
+            "weblab-vscode.isLoggedIn",
+            async () => {
+                vscode.window.showInformationMessage(
+                    (await this.isLoggedIn()) ? "Logged in" : "Not logged in"
+                );
+            }
+        );
+        context.subscriptions.push(isLoggedIn);
+
+        const openBrowser = vscode.commands.registerCommand(
+            "weblab-vscode.openBrowser",
+            async () => {
+                const username = await this.getUsername();
+                const page = await this.browserContext.newPage();
+                await page.goto(`https://weblab.tudelft.nl/profile/${username}`);
+            }
+        );
+        context.subscriptions.push(openBrowser);
     }
 
     async login(): Promise<string> {

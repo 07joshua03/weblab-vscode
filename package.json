@@ -32,6 +32,15 @@
         }
       ]
     },
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "weblab-vscode.syncAssignment",
+          "group": "inline",
+          "when": "view == courses && viewItem == assignment"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "weblab-vscode.login",
@@ -50,6 +59,14 @@
         "title": "Open WebLab assignment"
       },
       {
+        "command": "weblab-vscode.syncAssignment",
+        "title": "Sync WebLab assignment",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
+      },
+      {
         "command": "weblab-vscode.initFs",
         "title": "Start WebLab workspace"
       },
@@ -58,16 +75,8 @@
         "title": "Reset WebLab workspace"
       },
       {
-        "command": "weblab-vscode.addFile",
-        "title": "Add file to WebLab workspace"
-      },
-      {
         "command": "weblab-vscode.openBrowser",
         "title": "Open WebLab browser"
-      },
-      {
-        "command": "weblab-vscode.openFile",
-        "title": "Open file in WebLab workspace"
       }
     ]
   },
@@ -92,6 +101,7 @@
   },
   "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
   "dependencies": {
+    "diff": "^7.0.0",
     "playwright": "1.38.0"
   }
 }
