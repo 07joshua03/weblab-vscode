@@ -8,12 +8,31 @@ export class AssignmentProvider {
 
     private browserProvider: BrowserProvider;
     private webLabFs: WebLabFs;
+    private userTestButton: vscode.StatusBarItem;
+    private specTestButton: vscode.StatusBarItem;
 
     constructor(browserProvider: BrowserProvider, webLabFs: WebLabFs) {
         this.browserProvider = browserProvider;
         this.webLabFs = webLabFs;
+        const [a, b] = this.registerActionButtons(context);
+        this.userTestButton = a;
+        this.specTestButton = b;
     }
 
+    registerActionButtons(context: vscode.ExtensionContext) {
+        const userTestButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+        userTestButton.text = "Your Test";
+        userTestButton.command = "weblab-vscode.yourTestActive";
+        // userTestButton.show();
+        context.subscriptions.push(userTestButton);
+
+        const specTestButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+        specTestButton.text = "Spec Test";
+        specTestButton.command = "weblab-vscode.specTestActive";
+        // specTestButton.show();
+        context.subscriptions.push(specTestButton);
+        return [userTestButton, specTestButton];
+    }
     registerCommands(context: vscode.ExtensionContext) {
         const openAssignment = vscode.commands.registerCommand(
             "weblab-vscode.openAssignment",
@@ -54,6 +73,26 @@ export class AssignmentProvider {
             }
         );
         context.subscriptions.push(specTest);
+
+        const yourTestActive = vscode.commands.registerCommand(
+            "weblab-vscode.yourTestActive",
+            async () => {
+                if (this.activeAssignment) {
+                    this.yourTest(this.activeAssignment);
+                }
+            }
+        );
+        context.subscriptions.push(yourTestActive);
+
+        const specTestActive = vscode.commands.registerCommand(
+            "weblab-vscode.specTestActive",
+            async () => {
+                if (this.activeAssignment) {
+                    this.specTest(this.activeAssignment);
+                }
+            }
+        );
+        context.subscriptions.push(specTestActive);
     }
 
     async openAssignment(assignment: Assignment, sync: boolean = false) {
@@ -79,6 +118,9 @@ export class AssignmentProvider {
         } else { console.log("File already exists: " + testLocation); };
         await this.webLabFs.openFile(solutionUri);
         await this.openDescription(assignment);
+        this.activeAssignment = assignment;
+        this.userTestButton.show();
+        this.specTestButton.show();
     }
 
 

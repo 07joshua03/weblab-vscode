@@ -95,6 +95,14 @@
         "title": "Run Spec Test"
       },
       {
+        "command": "weblab-vscode.yourTestActive",
+        "title": "Run Active Your Test"
+      },
+      {
+        "command": "weblab-vscode.specTestActive",
+        "title": "Run Active Spec Test"
+      },
+      {
         "command": "weblab-vscode.openBrowser",
         "title": "Open WebLab browser"
       }
