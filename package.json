@@ -3,6 +3,10 @@
   "displayName": "weblab-vscode",
   "description": "WebLab functionality within VS Code",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/07joshua03/weblab-vscode.git"
+  },
   "engines": {
     "vscode": "^1.54.0"
   },
@@ -10,6 +14,9 @@
     "Other"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/.weblab"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -97,7 +104,10 @@
     "watch": "tsc -watch -p ./",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+    "package": "pnpm vsce package --no-dependencies",
+    "publish": "pnpm vsce publish --no-dependencies"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -107,12 +117,13 @@
     "@typescript-eslint/parser": "^8.17.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2",
     "eslint": "^9.16.0",
     "typescript": "^5.7.2"
   },
   "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
   "dependencies": {
-    "diff": "^7.0.0",
     "playwright": "1.38.0"
   }
 }
