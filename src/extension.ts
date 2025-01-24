@@ -13,8 +13,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.commands.executeCommand('setContext', 'extensionEnabled', true);
 
 	const webLabFs = new WebLabFs();
-	webLabFs.registerFileSystemProvider(context);
-	webLabFs.registerCommands(context);
 
 	const courseProvider = new CourseProvider(browserProvider);
 	courseProvider.registerTreeDataProvider(context);

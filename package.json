@@ -9,9 +9,6 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onFileSystem:weblabfs"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -27,8 +24,7 @@
       "course-explorer": [
         {
           "id": "courses",
-          "name": "WebLab",
-          "when": "extensionEnabled"
+          "name": "WebLab"
         }
       ]
     },
@@ -88,14 +84,6 @@
       {
         "command": "weblab-vscode.specTest",
         "title": "Run Spec Test"
-      },
-      {
-        "command": "weblab-vscode.initFs",
-        "title": "Start WebLab workspace"
-      },
-      {
-        "command": "weblab-vscode.resetFs",
-        "title": "Reset WebLab workspace"
       },
       {
         "command": "weblab-vscode.openBrowser",

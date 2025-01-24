@@ -4,7 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-import * as path from 'path';
+import { posix } from 'path';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 
 export class File implements vscode.FileStat {
@@ -48,39 +49,22 @@ export class Directory implements vscode.FileStat {
 
 export type Entry = File | Directory;
 
-export class WebLabFs implements vscode.FileSystemProvider {
-
-	root = new Directory('');
-
-	registerFileSystemProvider(context: vscode.ExtensionContext) {
-		context.subscriptions.push(vscode.workspace.registerFileSystemProvider('weblabfs', this, { isCaseSensitive: true }));
-	}
+export class WebLabFs {
 
 	registerCommands(context: vscode.ExtensionContext) {
-		context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.resetFs', _ => {
-			for (const [name] of this.readDirectory(vscode.Uri.parse('weblabfs:/'))) {
-				this.delete(vscode.Uri.parse(`weblabfs:/${name}`));
-			}
-		}));
-
-		context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.initFs', _ => {
-			vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('weblabfs:/'), name: "WebLab Workspace" });
-		}));
-	}
-
-	// --- manage file metadata
-
-	stat(uri: vscode.Uri): vscode.FileStat {
-		return this._lookup(uri, false);
-	}
-
-	readDirectory(uri: vscode.Uri): [string, vscode.FileType][] {
-		const entry = this._lookupAsDirectory(uri, false);
-		const result: [string, vscode.FileType][] = [];
-		for (const [name, child] of entry.entries) {
-			result.push([name, child.type]);
-		}
-		return result;
+		// context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.initFs', _ => {
+		// 	while(!context.globalState.get("weblabDefaultLocation")){
+		// 		vscode.window.showWorkspaceFolderPick({}).then(value => {
+					
+		// 		});
+		// 		vscode.window.showInputBox({"placeHolder": "Enter the default location for the WebLab workspace", title: "WebLab Workspace Location"}).then(value => {
+		// 			if(value){
+		// 				context.globalState.update("weblabDefaultLocation", value);
+		// 			}
+		// 		});
+		// 	}
+		// 	vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('weblabfs:/'), name: "WebLab Workspace" });
+		// }));
 	}
 
 	// --- manage file contents
@@ -89,27 +73,6 @@ export class WebLabFs implements vscode.FileSystemProvider {
 		await vscode.workspace.openTextDocument(file).then(doc => {
 			vscode.window.showTextDocument(doc);
 		});;
-	}
-
-	createFile(filename: string, data: string) {
-		let prevFolder = "";
-		this.createParentFolders(filename, true);
-		this.writeFile(vscode.Uri.parse(`weblabfs:/${filename}`), Buffer.from(data), { create: true, overwrite: true });
-	}
-
-	createParentFolders(fileLocation: string, recursive: boolean) {
-		if (recursive) {
-			let prevFolder = "";
-			fileLocation.split("/").slice(0, -1).forEach(folder => {
-				const folderLocation = prevFolder === "" ? folder : `${prevFolder}/${folder}`;
-				if (!(this._lookup(vscode.Uri.parse(`weblabfs:/${folderLocation}`), true) instanceof Directory)) {
-					this.createDirectory(vscode.Uri.parse(`weblabfs:/${folderLocation}`));
-				}
-				prevFolder = folderLocation;
-			});
-		} else if (!(this._lookup(vscode.Uri.parse(`weblabfs:/${fileLocation}`), true) instanceof Directory)) {
-			this.createDirectory(vscode.Uri.parse(`weblabfs:/${fileLocation}`));
-		}
 	}
 
 	async getFileData(uri: vscode.Uri): Promise<string> {
@@ -121,167 +84,50 @@ export class WebLabFs implements vscode.FileSystemProvider {
 		} 
 	}
 
-	readFile(uri: vscode.Uri): Uint8Array {
-		const data = this._lookupAsFile(uri, false).data;
-		if (data) {
-			return data;
+	async createFile(fileLocation: string, data: string) {
+		if (!vscode.workspace.workspaceFolders) {
+			return vscode.window.showInformationMessage('No folder or workspace opened');
 		}
-		throw vscode.FileSystemError.FileNotFound();
+
+		this.createParentFolders(fileLocation, true);
+		const folderUri = vscode.workspace.workspaceFolders[0].uri;
+		const fileUri = folderUri.with({ path: posix.join(folderUri.path, fileLocation) });
+		await vscode.workspace.fs.writeFile(fileUri, Buffer.from(data, 'utf8'));
+		// this.writeFile(vscode.Uri.parse(`weblabfs:/${fileLocation}`), Buffer.from(data), { create: true, overwrite: true });
 	}
 
-	writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean }): void {
-		const basename = path.posix.basename(uri.path);
-		const parent = this._lookupParentDirectory(uri);
-		let entry = parent.entries.get(basename);
-		if (entry instanceof Directory) {
-			throw vscode.FileSystemError.FileIsADirectory(uri);
+	createParentFolders(fileLocation: string, recursive: boolean) {
+		if (!vscode.workspace.workspaceFolders) {
+			return vscode.window.showInformationMessage('No folder or workspace opened');
 		}
-		if (!entry && !options.create) {
-			throw vscode.FileSystemError.FileNotFound(uri);
+		const folderUri = vscode.workspace.workspaceFolders[0].uri;
+		
+		if (recursive) {
+			let prevFolder = "";
+			fileLocation.split("/").slice(0, -1).forEach(folder => {
+				const folderLocation = prevFolder === "" ? folder : `${prevFolder}/${folder}`;
+				if (!(fs.existsSync(posix.join(folderUri.path, folderLocation)))) {
+					const dirUri = folderUri.with({path: posix.join(folderUri.path, folderLocation)});
+					vscode.workspace.fs.createDirectory(dirUri);
+					// this.createDirectory(vscode.Uri.parse(`weblabfs:/${folderLocation}`));
+				}
+				prevFolder = folderLocation;
+			});
+		} else if (!(fs.existsSync(posix.join(folderUri.path, fileLocation.split("/").slice(0, -1).join("/"))))) {
+			const dirUri = folderUri.with({path: posix.join(folderUri.path, fileLocation)});
+			vscode.workspace.fs.createDirectory(dirUri);
+			// this.createDirectory(vscode.Uri.parse(`weblabfs:/${fileLocation}`));
 		}
-		if (entry && options.create && !options.overwrite) {
-			throw vscode.FileSystemError.FileExists(uri);
-		}
-		if (!entry) {
-			entry = new File(basename);
-			parent.entries.set(basename, entry);
-			this._fireSoon({ type: vscode.FileChangeType.Created, uri });
-		}
-		entry.mtime = Date.now();
-		entry.size = content.byteLength;
-		entry.data = content;
-
-		this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
 	}
 
-	// --- manage files/folders
-
-	rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void {
-
-		if (!options.overwrite && this._lookup(newUri, true)) {
-			throw vscode.FileSystemError.FileExists(newUri);
-		}
-
-		const entry = this._lookup(oldUri, false);
-		const oldParent = this._lookupParentDirectory(oldUri);
-
-		const newParent = this._lookupParentDirectory(newUri);
-		const newName = path.posix.basename(newUri.path);
-
-		oldParent.entries.delete(entry.name);
-		entry.name = newName;
-		newParent.entries.set(newName, entry);
-
-		this._fireSoon(
-			{ type: vscode.FileChangeType.Deleted, uri: oldUri },
-			{ type: vscode.FileChangeType.Created, uri: newUri }
-		);
-	}
-
-	delete(uri: vscode.Uri): void {
-		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-		const basename = path.posix.basename(uri.path);
-		const parent = this._lookupAsDirectory(dirname, false);
-		if (!parent.entries.has(basename)) {
-			throw vscode.FileSystemError.FileNotFound(uri);
-		}
-		parent.entries.delete(basename);
-		parent.mtime = Date.now();
-		parent.size -= 1;
-		this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { uri, type: vscode.FileChangeType.Deleted });
-	}
-
-	createDirectory(uri: vscode.Uri): void {
-		const basename = path.posix.basename(uri.path);
-		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-		const parent = this._lookupAsDirectory(dirname, false);
-
-		const entry = new Directory(basename);
-		parent.entries.set(entry.name, entry);
-		parent.mtime = Date.now();
-		parent.size += 1;
-		this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
-	}
 
 	// --- lookup
 
 	public fileExists(uri: vscode.Uri): boolean {
-		return this._lookup(uri, true) instanceof File;
+		return fs.existsSync(uri.fsPath);
 	}
 
 	public folderExists(uri: vscode.Uri): boolean {
-		return this._lookup(uri, true) instanceof Directory;
-	}
-
-	private _lookup(uri: vscode.Uri, silent: false): Entry;
-	private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined;
-	private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined {
-		const parts = uri.path.split('/');
-		let entry: Entry = this.root;
-		for (const part of parts) {
-			if (!part) {
-				continue;
-			}
-			let child: Entry | undefined;
-			if (entry instanceof Directory) {
-				child = entry.entries.get(part);
-			}
-			if (!child) {
-				if (!silent) {
-					throw vscode.FileSystemError.FileNotFound(uri);
-				} else {
-					return undefined;
-				}
-			}
-			entry = child;
-		}
-		return entry;
-	}
-
-	private _lookupAsDirectory(uri: vscode.Uri, silent: boolean): Directory {
-		const entry = this._lookup(uri, silent);
-		if (entry instanceof Directory) {
-			return entry;
-		}
-		throw vscode.FileSystemError.FileNotADirectory(uri);
-	}
-
-	private _lookupAsFile(uri: vscode.Uri, silent: boolean): File {
-		const entry = this._lookup(uri, silent);
-		if (entry instanceof File) {
-			return entry;
-		}
-		throw vscode.FileSystemError.FileIsADirectory(uri);
-	}
-
-	private _lookupParentDirectory(uri: vscode.Uri): Directory {
-		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-		return this._lookupAsDirectory(dirname, false);
-	}
-
-	// --- manage file events
-
-	private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-	private _bufferedEvents: vscode.FileChangeEvent[] = [];
-	private _fireSoonHandle?: NodeJS.Timeout;
-
-	readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
-
-	watch(_resource: vscode.Uri): vscode.Disposable {
-		// ignore, fires for all changes...
-		return new vscode.Disposable(() => { });
-	}
-
-	private _fireSoon(...events: vscode.FileChangeEvent[]): void {
-		this._bufferedEvents.push(...events);
-
-		if (this._fireSoonHandle) {
-			clearTimeout(this._fireSoonHandle);
-		}
-
-		this._fireSoonHandle = setTimeout(() => {
-			this._emitter.fire(this._bufferedEvents);
-			this._bufferedEvents.length = 0;
-		}, 5);
+		return fs.existsSync(uri.fsPath);
 	}
 }
