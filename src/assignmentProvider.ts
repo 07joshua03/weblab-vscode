@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { BrowserProvider } from "./browserProvider";
 import { WebLabFs } from "./fileSystemProvider";
 import { Assignment } from "./courseProvider";
+import { posix } from "path";
 
 export class AssignmentProvider {
 
@@ -56,20 +57,27 @@ export class AssignmentProvider {
     }
 
     async openAssignment(assignment: Assignment, sync: boolean = false) {
+        if (!vscode.workspace.workspaceFolders) {
+            return vscode.window.showInformationMessage('No folder or workspace opened');
+        }
+        const folderUri = vscode.workspace.workspaceFolders[0].uri;
+    
         const [solutionFile, testFile] = await this.getAssignmentData(assignment.link);
-
+        
         const solutionLocation = assignment.folderLocation + "/" + "solution.java";
-        if (!this.webLabFs.fileExists(vscode.Uri.parse(`weblabfs:/${solutionLocation}`)) || sync) {
-            this.webLabFs.createFile(solutionLocation, solutionFile);
+        const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
+        if (!this.webLabFs.fileExists(solutionUri) || sync) {
+            await this.webLabFs.createFile(solutionLocation, solutionFile);
             console.log("File created: " + solutionLocation);
         } else { console.log("File already exists: " + solutionLocation); };
-
+        
         const testLocation = assignment.folderLocation + "/" + "test.java";
-        if (!this.webLabFs.fileExists(vscode.Uri.parse(`weblabfs:/${testLocation}`)) || sync) {
-            this.webLabFs.createFile(testLocation, testFile);
+        const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
+        if (!this.webLabFs.fileExists(testUri) || sync) {
+            await this.webLabFs.createFile(testLocation, testFile);
             console.log("File created: " + testLocation);
         } else { console.log("File already exists: " + testLocation); };
-        await this.webLabFs.openFile(vscode.Uri.parse(`weblabfs:/${solutionLocation}`));
+        await this.webLabFs.openFile(solutionUri);
         await this.openDescription(assignment);
     }
 
@@ -95,6 +103,11 @@ export class AssignmentProvider {
     }
 
     async submitAssignment(assignment: Assignment) {
+        if (!vscode.workspace.workspaceFolders) {
+            return vscode.window.showInformationMessage('No folder or workspace opened');
+        }
+        const folderUri = vscode.workspace.workspaceFolders[0].uri;
+    
         const page = await this.browserProvider.getBrowserContext().newPage();
         await page.goto(assignment.link.replace("view", "edit"), {
             waitUntil: "networkidle",
@@ -109,10 +122,13 @@ export class AssignmentProvider {
         delete requestHeader[":scheme"];
         const splitHeader = "--" + (await request.allHeaders())["content-type"].split(";")[1].split("=")[1];
         await page.waitForTimeout(100);
-        const solutionFileData = await this.webLabFs.getFileData(vscode.Uri.parse(`weblabfs:/${assignment.folderLocation}/solution.java`));
+
+        const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
+        const solutionFileData = await this.webLabFs.getFileData(solutionUri);
         const solutionNewData = this.injectNewData(request.postData() ?? "", solutionFileData, splitHeader, 5);
 
-        const testFileData = await this.webLabFs.getFileData(vscode.Uri.parse(`weblabfs:/${assignment.folderLocation}/test.java`));
+        const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
+        const testFileData = await this.webLabFs.getFileData(testUri);
         const testNewData = this.injectNewData(solutionNewData, testFileData, splitHeader, 6);
 
         console.log("Split header: " + splitHeader);
