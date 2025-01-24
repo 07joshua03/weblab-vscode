@@ -2,6 +2,18 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.0]
+
+### Features
+- Added save to WebLab on filesave
+- Improved assignment-testing submissions
+- Added bottom-display for test results
+- Added buttons on bottom-bar for spec/user-test
+
+## Fixes
+- Fixed user/spec test race condition
+- Added clearer documentation for installing and developing
+
 ## [0.1.0]
 
 ### Features

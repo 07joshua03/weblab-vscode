@@ -2,7 +2,7 @@
   "name": "weblab-vscode",
   "displayName": "weblab-vscode",
   "description": "WebLab functionality within VS Code",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "icon": "resources/tud_flame.png",
   "publisher": "07joshua03",
   "repository": {
