@@ -3,10 +3,10 @@ import { BrowserProvider } from "./browserProvider";
 import { Locator, Page } from "playwright";
 import { open } from "fs";
 export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
-    private browserManager: BrowserProvider;
+    private browserProvider: BrowserProvider;
 
-    constructor(browserManager: BrowserProvider) {
-        this.browserManager = browserManager;
+    constructor(browserProvider: BrowserProvider) {
+        this.browserProvider = browserProvider;
     }
 
     registerTreeDataProvider(context: vscode.ExtensionContext) {
@@ -33,16 +33,16 @@ export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
     }
     getChildren(element?: TreeItem | undefined): Thenable<TreeItem[]> {
         if (element) {
-            return element.getChildren(this.browserManager);
+            return element.getChildren(this.browserProvider);
         } else {
             return this.getCourses();
         }
     }
 
     async getCourses(): Promise<Course[]> {
-        const username: string = await this.browserManager.getUsername();
+        const username: string = await this.browserProvider.getUsername();
 
-        const page = await this.browserManager.getBrowserContext().newPage();
+        const page = await this.browserProvider.getBrowserContext().newPage();
         await page.goto(`https://weblab.tudelft.nl/profile/${username}`, {
             waitUntil: "networkidle",
         });
@@ -251,7 +251,7 @@ class Course extends TreeItem {
                 assignmentFolderId,
                 assignmentFolderLink,
                 null,
-                this.label
+                this.label.replace(":", "")
             );
             assignments.push(assignmentResult);
         }

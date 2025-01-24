@@ -18,7 +18,10 @@ Some notable features include:
 - See issues
 
 ## Installing
-- Install the specific Playwright version (1.38.0) (using npm playwright install ?)
+- Install the playwright requisites (you specifically need version 1.38.0) using NPM:
+```sh
+npx playwright@1.38.0 install
+```
 
 ## Known Issues
 - The extension is not very stable and may break at any time

@@ -2,7 +2,9 @@
   "name": "weblab-vscode",
   "displayName": "weblab-vscode",
   "description": "WebLab functionality within VS Code",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "icon": "resources/tud_flame.png",
+  "publisher": "07joshua03",
   "repository": {
     "type": "git",
     "url": "https://github.com/07joshua03/weblab-vscode.git"
@@ -13,9 +15,9 @@
   "categories": [
     "Other"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "activationEvents": [
-    "workspaceContains:**/.weblab"
+    "*"
   ],
   "contributes": {
     "viewsContainers": {
@@ -23,7 +25,7 @@
         {
           "id": "course-explorer",
           "title": "WebLab",
-          "icon": "resources/tud_flame.svg"
+          "icon": "resources/tud_flame.png"
         }
       ]
     },
@@ -76,8 +78,8 @@
         "command": "weblab-vscode.syncAssignment",
         "title": "Sync WebLab assignment",
         "icon": {
-          "light": "resources/light/refresh.svg",
-          "dark": "resources/dark/refresh.svg"
+          "light": "resources/light/refresh.png",
+          "dark": "resources/dark/refresh.png"
         }
       },
       {
@@ -99,15 +101,17 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./",
+    "compile": "pnpm run check-types && node esbuild.js",
+    "check-types": "tsc --noEmit",
     "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "pnpm run package",
     "pretest": "pnpm run compile && pnpm run lint",
+    "watch:esbuild": "node esbuild.js --watch",
     "lint": "eslint src",
     "test": "vscode-test",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-    "package": "pnpm vsce package --no-dependencies",
-    "publish": "pnpm vsce publish --no-dependencies"
+    "package": "pnpm run check-types && node esbuild.js --production",
+    "publish": "pnpm vsce publish --no-dependencies",
+    "login": "pnpm vsce login 07joshua03"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
