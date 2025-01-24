@@ -112,6 +112,15 @@ export class WebLabFs implements vscode.FileSystemProvider {
 		}
 	}
 
+	async getFileData(uri: vscode.Uri): Promise<string> {
+		try {
+			const document = await vscode.workspace.openTextDocument(uri);
+			return document.getText();
+		}catch (error) {
+			throw new Error("Reading file " + uri.fsPath +"failed");
+		} 
+	}
+
 	readFile(uri: vscode.Uri): Uint8Array {
 		const data = this._lookupAsFile(uri, false).data;
 		if (data) {
