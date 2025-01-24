@@ -46,19 +46,20 @@ export class BrowserProvider {
 
     async login(): Promise<string> {
         let username: string | undefined =
-            this.context.workspaceState.get("username");
+            this.context.globalState.get("username");
         while (!username) {
             username = await vscode.window.showInputBox({
                 placeHolder: "Enter your username",
             });
-            this.context.workspaceState.update("username", username);
+            this.context.globalState.update("username", username);
         }
-        let password: string | undefined;
+        let password: string | undefined = await this.context.secrets.get("password");
         while (!password) {
             password = await vscode.window.showInputBox({
                 placeHolder: "Enter your password",
                 password: true,
             });
+            this.context.secrets.store("password", password ?? "");
         }
         const page = await this.browserContext.newPage();
         await page.goto("https://weblab.tudelft.nl/samlsignin");
@@ -93,7 +94,7 @@ export class BrowserProvider {
      */
     async getUsername(): Promise<string> {
         let username: string | undefined =
-            this.context.workspaceState.get("username");
+            this.context.globalState.get("username");
         if (!username || !(await this.isLoggedIn())) {
             username = await this.login();
         }
