@@ -38,6 +38,12 @@
           "command": "weblab-vscode.syncAssignment",
           "group": "inline",
           "when": "view == courses && viewItem == assignment"
+        },
+        {
+          "command": "weblab-vscode.submitAssignment",
+          "group": "inline",
+          "when": "view == courses && viewItem == assignment",
+          "alt": "submit"
         }
       ]
     },
@@ -65,6 +71,10 @@
           "light": "resources/light/refresh.svg",
           "dark": "resources/dark/refresh.svg"
         }
+      },
+      {
+        "command": "weblab-vscode.submitAssignment",
+        "title": "Submit WebLab assignment"
       },
       {
         "command": "weblab-vscode.initFs",
