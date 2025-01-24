@@ -8,6 +8,7 @@ export class AssignmentProvider {
 
     private browserProvider: BrowserProvider;
     private webLabFs: WebLabFs;
+    private activeAssignment: Assignment | undefined;
     private userTestButton: vscode.StatusBarItem;
     private specTestButton: vscode.StatusBarItem;
 
@@ -33,6 +34,28 @@ export class AssignmentProvider {
         context.subscriptions.push(specTestButton);
         return [userTestButton, specTestButton];
     }
+
+    registerOnSave() {
+        vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+            if (!vscode.workspace.workspaceFolders) {
+                return vscode.window.showWarningMessage('No folder or workspace opened');
+            }
+            if (!this.activeAssignment) {
+                return vscode.window.showWarningMessage("No active assignment found. Please select your assignment in the Sidebar before saving.");
+
+            }
+            const folderUri = vscode.workspace.workspaceFolders[0].uri;
+
+
+            if (document.uri.fsPath === folderUri.with({ path: posix.join(folderUri.path, this.activeAssignment.folderLocation, "solution.java") }).fsPath || document.uri.fsPath === folderUri.with({ path: posix.join(folderUri.path, this.activeAssignment.folderLocation, "test.java") }).fsPath) {
+                await this.submitAssignment(this.activeAssignment);
+                vscode.window.showInformationMessage("Saved assignment!");
+            } else {
+                return vscode.window.showWarningMessage("You just saved a non-active assignment. Please select your assignment in the Sidebar before saving.");
+            }
+        });
+    }
+
     registerCommands(context: vscode.ExtensionContext) {
         const openAssignment = vscode.commands.registerCommand(
             "weblab-vscode.openAssignment",
@@ -100,16 +123,16 @@ export class AssignmentProvider {
             return vscode.window.showInformationMessage('No folder or workspace opened');
         }
         const folderUri = vscode.workspace.workspaceFolders[0].uri;
-    
+
         const [solutionFile, testFile] = await this.getAssignmentData(assignment.link);
-        
+
         const solutionLocation = assignment.folderLocation + "/" + "solution.java";
         const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
         if (!this.webLabFs.fileExists(solutionUri) || sync) {
             await this.webLabFs.createFile(solutionLocation, solutionFile);
             console.log("File created: " + solutionLocation);
         } else { console.log("File already exists: " + solutionLocation); };
-        
+
         const testLocation = assignment.folderLocation + "/" + "test.java";
         const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
         if (!this.webLabFs.fileExists(testUri) || sync) {
@@ -118,6 +141,8 @@ export class AssignmentProvider {
         } else { console.log("File already exists: " + testLocation); };
         await this.webLabFs.openFile(solutionUri);
         await this.openDescription(assignment);
+        const [postData, splitHeader, requestHeader] = await this.getSubmitInfo(assignment);
+        assignment.saveSubmitData(postData, splitHeader, requestHeader);
         this.activeAssignment = assignment;
         this.userTestButton.show();
         this.specTestButton.show();
@@ -144,12 +169,7 @@ export class AssignmentProvider {
         return [solutionData, testData];
     }
 
-    async submitAssignment(assignment: Assignment) {
-        if (!vscode.workspace.workspaceFolders) {
-            return vscode.window.showInformationMessage('No folder or workspace opened');
-        }
-        const folderUri = vscode.workspace.workspaceFolders[0].uri;
-    
+    async getSubmitInfo(assignment: Assignment): Promise<[string, string, { [key: string]: string }]> {
         const page = await this.browserProvider.getBrowserContext().newPage();
         await page.goto(assignment.link.replace("view", "edit"), {
             waitUntil: "networkidle",
@@ -163,27 +183,39 @@ export class AssignmentProvider {
         delete requestHeader[":path"];
         delete requestHeader[":scheme"];
         const splitHeader = "--" + (await request.allHeaders())["content-type"].split(";")[1].split("=")[1];
-        await page.waitForTimeout(100);
+        const postData = request.postData();
+        if (!postData) {
+            throw new Error("PostData for assignment not found");
+        }
+        await page.close();
+        return [postData, splitHeader, requestHeader];
+    }
+
+    async submitAssignment(assignment: Assignment) {
+        if (!vscode.workspace.workspaceFolders) {
+            return vscode.window.showInformationMessage('No folder or workspace opened');
+        }
+        const folderUri = vscode.workspace.workspaceFolders[0].uri;
+
+        if (!assignment.postData || !assignment.splitHeader) {
+            throw new Error("Assignment submit data not found");
+        }
 
         const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
         const solutionFileData = await this.webLabFs.getFileData(solutionUri);
-        const solutionNewData = this.injectNewData(request.postData() ?? "", solutionFileData, splitHeader, 5);
+        const solutionNewData = this.injectNewData(assignment.postData, solutionFileData, assignment.splitHeader, 5);
 
         const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
         const testFileData = await this.webLabFs.getFileData(testUri);
-        const testNewData = this.injectNewData(solutionNewData, testFileData, splitHeader, 6);
+        const testNewData = this.injectNewData(solutionNewData, testFileData, assignment.splitHeader, 6);
 
-        console.log("Split header: " + splitHeader);
-        console.log(solutionNewData);
         await this.browserProvider.getBrowserContext().request.post(
             "https://weblab.tudelft.nl/codeEditorAjaxProgrammingAnswer_String_Bool",
             {
-                headers: requestHeader,
+                headers: assignment.requestHeader,
                 data: testNewData,
             }
         );
-        await page.close();
-
     }
 
     async openDescription(assignment: Assignment) {

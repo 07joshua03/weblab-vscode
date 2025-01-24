@@ -93,6 +93,10 @@ abstract class TreeItem extends vscode.TreeItem {
 export class Assignment extends TreeItem {
     type: string;
     folderLocation: string;
+    postData: string | undefined;
+    splitHeader: string | undefined;
+    requestHeader: { [key: string]: string } | undefined;
+
     constructor(
         public readonly label: string,
         link: string,
@@ -113,6 +117,12 @@ export class Assignment extends TreeItem {
     }
     getChildren(_browserManager: BrowserProvider): Promise<TreeItem[]> {
         return Promise.resolve([]);
+    }
+
+    saveSubmitData(postData: string, splitHeader: string, requestHeader: { [key: string]: string }) {
+        this.postData = postData;
+        this.splitHeader = splitHeader;
+        this.requestHeader = requestHeader;
     }
 }
 
