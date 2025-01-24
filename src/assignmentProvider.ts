@@ -37,6 +37,22 @@ export class AssignmentProvider {
             }
         );
         context.subscriptions.push(submitAssignment);
+
+        const yourTest = vscode.commands.registerCommand(
+            "weblab-vscode.yourTest",
+            async (assignment: Assignment) => {
+                this.yourTest(assignment);
+            }
+        );
+        context.subscriptions.push(yourTest);
+
+        const specTest = vscode.commands.registerCommand(
+            "weblab-vscode.specTest",
+            async (assignment: Assignment) => {
+                this.specTest(assignment);
+            }
+        );
+        context.subscriptions.push(specTest);
     }
 
     async openAssignment(assignment: Assignment, sync: boolean = false) {
@@ -59,6 +75,7 @@ export class AssignmentProvider {
 
     async getAssignmentData(link: string): Promise<[string, string]> {
         const page = await this.browserProvider.getBrowserContext().newPage();
+        
         await page.goto(link.replace("view", "edit"), {
             waitUntil: "networkidle",
         });
@@ -90,7 +107,7 @@ export class AssignmentProvider {
         delete requestHeader[":path"];
         delete requestHeader[":scheme"];
         const splitHeader = "--" + (await request.allHeaders())["content-type"].split(";")[1].split("=")[1];
-        await page.waitForTimeout(10000);
+        await page.waitForTimeout(100);
         const solutionFileData = await this.webLabFs.getFileData(vscode.Uri.parse(`weblabfs:/${assignment.folderLocation}/solution.java`));
         const solutionNewData = this.injectNewData(request.postData()?? "", solutionFileData, splitHeader, 5);
 
@@ -106,10 +123,144 @@ export class AssignmentProvider {
                 data: testNewData,
             }
         );
-        await page.waitForTimeout(30000);
         await page.close();
         
     }
+
+    async yourTest(assignment: Assignment) {
+        const page = await this.browserProvider.getBrowserContext().newPage();
+        await page.goto(assignment.link.replace("view", "edit"), {
+            waitUntil: "networkidle",
+        });
+        const requestPromise = page.waitForRequest("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+        const responsePromise = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+        await page.locator("a.btn.userTestBtn").click();
+        const request = await requestPromise;
+        const response = await responsePromise;
+        const requestHeader = await request.allHeaders();
+        delete requestHeader[":method"];
+        delete requestHeader[":authority"];
+        delete requestHeader[":path"];
+        delete requestHeader[":scheme"];
+        await page.waitForTimeout(200);
+
+        const responseData = (await response.body()).toString();
+        const sessionId = this.getSessionId(responseData);
+
+        const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
+        const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
+        const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
+        if(!newButtonIdGroup) {
+            throw new Error("No button id found");
+        }
+        const newButtonId = newButtonIdGroup[1];
+        console.log(sessionId);
+        console.log(updateButtonId); 
+
+        let newData = request.postData() ?? "";
+
+        newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update"+newButtonId + "\"");
+        const sessionRegex = /"session"\n\n([0-9]+)\n/;
+        newData.replace(sessionRegex, "\"session\"\n\n"+sessionId+"\n");
+        console.log(newData);
+        const jaja = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+
+        await this.browserProvider.getBrowserContext().request.post(
+            "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
+            {
+                headers: requestHeader,
+                data: newData,
+            }
+        );
+        const dataa = await jaja;
+        const dataJson = await dataa.json();
+        // console.log((await dataa.body()).toString());    
+        // console.log(dataJson[1]["value"]);
+        const panel = vscode.window.createWebviewPanel(
+            "yourTestResults",
+            "Your Test Results",
+            vscode.ViewColumn.Beside,
+            {}
+        );
+        panel.webview.html = dataJson[1]["value"];
+
+
+        await page.close();
+        
+    }
+
+    async specTest(assignment: Assignment) {
+        const page = await this.browserProvider.getBrowserContext().newPage();
+        await page.goto(assignment.link.replace("view", "edit"), {
+            waitUntil: "networkidle",
+        });
+        const requestPromise = page.waitForRequest("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+        const responsePromise = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+        await page.locator("a.btn.specTestBtn").click();
+        const request = await requestPromise;
+        const response = await responsePromise;
+        const requestHeader = await request.allHeaders();
+        delete requestHeader[":method"];
+        delete requestHeader[":authority"];
+        delete requestHeader[":path"];
+        delete requestHeader[":scheme"];
+        await page.waitForTimeout(200);
+
+        const responseData = (await response.body()).toString();
+        const sessionId = this.getSessionId(responseData);
+
+        const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
+        const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
+        const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
+        if(!newButtonIdGroup) {
+            throw new Error("No button id found");
+        }
+        const newButtonId = newButtonIdGroup[1];
+        console.log(sessionId);
+        console.log(updateButtonId); 
+
+        let newData = request.postData() ?? "";
+
+        newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update"+newButtonId + "\"");
+        const sessionRegex = /"session"\n\n([0-9]+)\n/;
+        newData.replace(sessionRegex, "\"session\"\n\n"+sessionId+"\n");
+        console.log(newData);
+        const jaja = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+
+        await this.browserProvider.getBrowserContext().request.post(
+            "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
+            {
+                headers: requestHeader,
+                data: newData,
+            }
+        );
+        const dataa = await jaja;
+        const dataJson = await dataa.json();
+        // console.log((await dataa.body()).toString());    
+        // console.log(dataJson[1]["value"]);
+        const panel = vscode.window.createWebviewPanel(
+            "specTestResults",
+            "Spec Test Results",
+            vscode.ViewColumn.Beside,
+            {}
+        );
+        panel.webview.html = dataJson[1]["value"];
+
+
+        await page.close();
+        
+    }
+
+    getSessionId(responseData: string): string {
+        var regex = /\\"name\\":\\"session\\", \\"value\\":\\"([0-9]+)\\"/g;
+        const sessionsMatch = regex.exec(responseData);
+        if(!sessionsMatch) {
+            throw new Error("No session found");
+        }
+        const sessionId = sessionsMatch[1];
+        return sessionId;
+    }
+
 
     processRawData(rawData: string, splitHeader: string, index: number): string {
         const trimmedData = rawData.split(splitHeader)[index].split("\n");

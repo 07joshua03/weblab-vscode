@@ -36,14 +36,19 @@
       "view/item/context": [
         {
           "command": "weblab-vscode.syncAssignment",
-          "group": "inline",
           "when": "view == courses && viewItem == assignment"
         },
         {
           "command": "weblab-vscode.submitAssignment",
-          "group": "inline",
-          "when": "view == courses && viewItem == assignment",
-          "alt": "submit"
+          "when": "view == courses && viewItem == assignment"
+        },
+        {
+          "command": "weblab-vscode.yourTest",
+          "when": "view == courses && viewItem == assignment"
+        },
+        {
+          "command": "weblab-vscode.specTest",
+          "when": "view == courses && viewItem == assignment"
         }
       ]
     },
@@ -75,6 +80,14 @@
       {
         "command": "weblab-vscode.submitAssignment",
         "title": "Submit WebLab assignment"
+      },
+      {
+        "command": "weblab-vscode.yourTest",
+        "title": "Run Your Test"
+      },
+      {
+        "command": "weblab-vscode.specTest",
+        "title": "Run Spec Test"
       },
       {
         "command": "weblab-vscode.initFs",
