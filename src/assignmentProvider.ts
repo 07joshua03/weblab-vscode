@@ -11,10 +11,12 @@ export class AssignmentProvider {
     private activeAssignment: Assignment | undefined;
     private userTestButton: vscode.StatusBarItem;
     private specTestButton: vscode.StatusBarItem;
+    private testWebviewViewProvider: TestWebviewViewProvider;
 
-    constructor(browserProvider: BrowserProvider, webLabFs: WebLabFs) {
+    constructor(browserProvider: BrowserProvider, webLabFs: WebLabFs, testWebviewViewProvider: TestWebviewViewProvider, context: vscode.ExtensionContext) {
         this.browserProvider = browserProvider;
         this.webLabFs = webLabFs;
+        this.testWebviewViewProvider = testWebviewViewProvider;
         const [a, b] = this.registerActionButtons(context);
         this.userTestButton = a;
         this.specTestButton = b;
@@ -254,51 +256,41 @@ export class AssignmentProvider {
         delete requestHeader[":authority"];
         delete requestHeader[":path"];
         delete requestHeader[":scheme"];
-        await page.waitForTimeout(200);
+        let testResultsGotten = false;
+        while (!testResultsGotten) {
+            await page.waitForTimeout(200);
 
-        const responseData = (await response.body()).toString();
-        const sessionId = this.getSessionId(responseData);
+            const responseData = (await response.body()).toString();
+            const sessionId = this.getSessionId(responseData);
 
-        const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
-        const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
-        const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
-        if (!newButtonIdGroup) {
-            throw new Error("No button id found");
-        }
-        const newButtonId = newButtonIdGroup[1];
-        console.log(sessionId);
-        console.log(updateButtonId);
-
-        let newData = request.postData() ?? "";
-
-        newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update" + newButtonId + "\"");
-        const sessionRegex = /"session"\n\n([0-9]+)\n/;
-        newData.replace(sessionRegex, "\"session\"\n\n" + sessionId + "\n");
-        console.log(newData);
-        const jaja = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
-
-        await this.browserProvider.getBrowserContext().request.post(
-            "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
-            {
-                headers: requestHeader,
-                data: newData,
+            const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
+            const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
+            const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
+            if (!newButtonIdGroup) {
+                throw new Error("No button id found");
             }
-        );
-        const dataa = await jaja;
-        const dataJson = await dataa.json();
-        // console.log((await dataa.body()).toString());    
-        // console.log(dataJson[1]["value"]);
-        const panel = vscode.window.createWebviewPanel(
-            "yourTestResults",
-            "Your Test Results",
-            {
-                viewColumn: vscode.ViewColumn.Beside,
-                preserveFocus: true
-            },
-            {}
-        );
-        panel.webview.html = dataJson[1]["value"];
+            const newButtonId = newButtonIdGroup[1];
 
+            let newData = request.postData() ?? "";
+
+            newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update" + newButtonId + "\"");
+            const sessionRegex = /"session"\n\n([0-9]+)\n/;
+            newData.replace(sessionRegex, "\"session\"\n\n" + sessionId + "\n");
+            const testResponseData = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+
+            await this.browserProvider.getBrowserContext().request.post(
+                "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
+                {
+                    headers: requestHeader,
+                    data: newData,
+                }
+            );
+            const dataJson = await (await testResponseData).json();
+            if (!(dataJson[1]["value"] as string).startsWith("updateJobTimeout")) {
+                testResultsGotten = true;
+            }
+            this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+        }
 
         await page.close();
 
@@ -319,51 +311,41 @@ export class AssignmentProvider {
         delete requestHeader[":authority"];
         delete requestHeader[":path"];
         delete requestHeader[":scheme"];
-        await page.waitForTimeout(200);
+        let testResultsGotten = false;
+        while (!testResultsGotten) {
+            await page.waitForTimeout(200);
 
-        const responseData = (await response.body()).toString();
-        const sessionId = this.getSessionId(responseData);
+            const responseData = (await response.body()).toString();
+            const sessionId = this.getSessionId(responseData);
 
-        const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
-        const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
-        const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
-        if (!newButtonIdGroup) {
-            throw new Error("No button id found");
-        }
-        const newButtonId = newButtonIdGroup[1];
-        console.log(sessionId);
-        console.log(updateButtonId);
-
-        let newData = request.postData() ?? "";
-
-        newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update" + newButtonId + "\"");
-        const sessionRegex = /"session"\n\n([0-9]+)\n/;
-        newData.replace(sessionRegex, "\"session\"\n\n" + sessionId + "\n");
-        console.log(newData);
-        const jaja = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
-
-        await this.browserProvider.getBrowserContext().request.post(
-            "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
-            {
-                headers: requestHeader,
-                data: newData,
+            const buttonIdRegex = /consoleButtonsProgrammingAnswer_Int_String_Bool_update(.+)/;
+            const updateButtonId = (await page.locator(`button[id^="update-"]`).getAttribute("submitid")) ?? "";
+            const newButtonIdGroup = buttonIdRegex.exec(updateButtonId);
+            if (!newButtonIdGroup) {
+                throw new Error("No button id found");
             }
-        );
-        const dataa = await jaja;
-        const dataJson = await dataa.json();
-        // console.log((await dataa.body()).toString());    
-        // console.log(dataJson[1]["value"]);
-        const panel = vscode.window.createWebviewPanel(
-            "specTestResults",
-            "Spec Test Results",
-            {
-                viewColumn: vscode.ViewColumn.Beside,
-                preserveFocus: true
-            },
-            {}
-        );
-        panel.webview.html = dataJson[1]["value"];
+            const newButtonId = newButtonIdGroup[1];
 
+            let newData = request.postData() ?? "";
+
+            newData = newData.replace(/"consoleButtonsProgrammingAnswer_Int_String_Bool_(runTest.+)"/, "\"consoleButtonsProgrammingAnswer_Int_String_Bool_update" + newButtonId + "\"");
+            const sessionRegex = /"session"\n\n([0-9]+)\n/;
+            newData.replace(sessionRegex, "\"session\"\n\n" + sessionId + "\n");
+            const testResponseData = page.waitForResponse("https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool");
+
+            await this.browserProvider.getBrowserContext().request.post(
+                "https://weblab.tudelft.nl/consoleButtonsProgrammingAnswer_Int_String_Bool",
+                {
+                    headers: requestHeader,
+                    data: newData,
+                }
+            );
+            const dataJson = await (await testResponseData).json();
+            if (!(dataJson[1]["value"] as string).startsWith("updateJobTimeout")) {
+                testResultsGotten = true;
+            }
+            this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+        }
 
         await page.close();
 
@@ -396,5 +378,22 @@ export class AssignmentProvider {
         const dataSuffix = trimmedData[index].split("\n").slice(-2).join("\n").replace(/[0-9a-zA-Z\-\;\:\'\"\[\]\(\)\{\}]/g, "");
         trimmedData[index] = [dataPrefix, newData, dataSuffix].join("\n");
         return trimmedData.join(splitHeader).replace(splitHeader + splitHeader, splitHeader);
+    }
+}
+
+export class TestWebviewViewProvider implements vscode.WebviewViewProvider {
+    private view?: vscode.WebviewView;
+
+    setHtml(html: string) {
+        if (this.view) {
+            this.view.webview.html = html;
+            this.view.show();
+        }
+    }
+
+    resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
+        this.view = webviewView;
+        webviewView.webview.html = "<div>hello</div>";
+        vscode.window.showErrorMessage("YES");
     }
 }

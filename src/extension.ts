@@ -3,7 +3,7 @@ import { Browser, chromium, Locator } from "playwright";
 import { CourseProvider } from "./courseProvider";
 import { BrowserProvider } from "./browserProvider";
 import { WebLabFs } from "./fileSystemProvider";
-import { AssignmentProvider } from "./assignmentProvider";
+import { AssignmentProvider, TestWebviewViewProvider } from "./assignmentProvider";
 
 export async function activate(context: vscode.ExtensionContext) {
 	const browser: Browser = await chromium.launch({ headless: true });
@@ -17,9 +17,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	const courseProvider = new CourseProvider(browserProvider);
 	courseProvider.registerTreeDataProvider(context);
 	courseProvider.registerCommands(context);
+	const testWebviewViewProvider: TestWebviewViewProvider = new TestWebviewViewProvider();
+	context.subscriptions.push(vscode.window.registerWebviewViewProvider("testWebviewView", testWebviewViewProvider));
+	testWebviewViewProvider.setHtml("<div>Good luck with studying!</div>");
+	const assignmentProvider = new AssignmentProvider(browserProvider, webLabFs, testWebviewViewProvider, context);
 
-	const assignmentProvider = new AssignmentProvider(browserProvider, webLabFs);
 	assignmentProvider.registerCommands(context);
+	assignmentProvider.registerOnSave();
 }
 
 export function deactivate() { }

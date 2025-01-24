@@ -55,7 +55,7 @@ export class WebLabFs {
 		// context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.initFs', _ => {
 		// 	while(!context.globalState.get("weblabDefaultLocation")){
 		// 		vscode.window.showWorkspaceFolderPick({}).then(value => {
-					
+
 		// 		});
 		// 		vscode.window.showInputBox({"placeHolder": "Enter the default location for the WebLab workspace", title: "WebLab Workspace Location"}).then(value => {
 		// 			if(value){
@@ -79,9 +79,9 @@ export class WebLabFs {
 		try {
 			const document = await vscode.workspace.openTextDocument(uri);
 			return document.getText();
-		}catch (error) {
-			throw new Error("Reading file " + uri.fsPath +"failed");
-		} 
+		} catch (error) {
+			throw new Error("Reading file " + uri.fsPath + "failed");
+		}
 	}
 
 	async createFile(fileLocation: string, data: string) {
@@ -101,20 +101,20 @@ export class WebLabFs {
 			return vscode.window.showInformationMessage('No folder or workspace opened');
 		}
 		const folderUri = vscode.workspace.workspaceFolders[0].uri;
-		
+
 		if (recursive) {
 			let prevFolder = "";
 			fileLocation.split("/").slice(0, -1).forEach(folder => {
 				const folderLocation = prevFolder === "" ? folder : `${prevFolder}/${folder}`;
 				if (!(fs.existsSync(posix.join(folderUri.path, folderLocation)))) {
-					const dirUri = folderUri.with({path: posix.join(folderUri.path, folderLocation)});
+					const dirUri = folderUri.with({ path: posix.join(folderUri.path, folderLocation) });
 					vscode.workspace.fs.createDirectory(dirUri);
 					// this.createDirectory(vscode.Uri.parse(`weblabfs:/${folderLocation}`));
 				}
 				prevFolder = folderLocation;
 			});
 		} else if (!(fs.existsSync(posix.join(folderUri.path, fileLocation.split("/").slice(0, -1).join("/"))))) {
-			const dirUri = folderUri.with({path: posix.join(folderUri.path, fileLocation)});
+			const dirUri = folderUri.with({ path: posix.join(folderUri.path, fileLocation) });
 			vscode.workspace.fs.createDirectory(dirUri);
 			// this.createDirectory(vscode.Uri.parse(`weblabfs:/${fileLocation}`));
 		}

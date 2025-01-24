@@ -2,7 +2,7 @@
   "name": "weblab-vscode",
   "displayName": "weblab-vscode",
   "description": "WebLab functionality within VS Code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "resources/tud_flame.png",
   "publisher": "07joshua03",
   "repository": {
@@ -27,6 +27,13 @@
           "title": "WebLab",
           "icon": "resources/tud_flame.png"
         }
+      ],
+      "panel": [
+        {
+          "id": "test-webview",
+          "title": "Test Results",
+          "icon": "resources/tud_flame.png"
+        }
       ]
     },
     "views": {
@@ -34,6 +41,13 @@
         {
           "id": "courses",
           "name": "WebLab"
+        }
+      ],
+      "test-webview": [
+        {
+          "id": "testWebviewView",
+          "name": "Test Results",
+          "type": "webview"
         }
       ]
     },
