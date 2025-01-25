@@ -39,6 +39,9 @@ export class AssignmentProvider {
 
     registerOnSave() {
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
+            if(!this.webLabFs.isEnabled()){
+                return;
+            }
             if (!this.activeAssignment) {
                 return vscode.window.showWarningMessage("No active assignment found. Please select your assignment in the Sidebar before saving.");
             }
