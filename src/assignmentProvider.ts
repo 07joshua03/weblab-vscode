@@ -81,6 +81,14 @@ export class AssignmentProvider {
         );
         context.subscriptions.push(syncAssignment);
 
+        const openAssignmentInBrowser = vscode.commands.registerCommand(
+            "weblab-vscode.openAssignmentInBrowser",
+            (assignment: Assignment) => {
+                require("openurl").open(assignment.link);
+            }
+        );
+        context.subscriptions.push(openAssignmentInBrowser);
+
         const submitAssignment = vscode.commands.registerCommand(
             "weblab-vscode.submitAssignment",
             async (assignment: Assignment) => {
