@@ -2,6 +2,12 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.4]
+
+### Fixes
+- Fixed duplicate assignment creation
+- Fixed on-save running when weblab disabled
+
 ## [0.2.3]
 
 ### Features
