@@ -284,14 +284,15 @@ class AssignmentFolder extends TreeItem {
                     );
                     assignments.push(assignmentResult);
 
+                }else {
+                    const assignmentResult = new Assignment(
+                        name.trim(),
+                        link,
+                        assignmentType,
+                        this.folderLocation + "/" + name.trim()
+                    );
+                    assignments.push(assignmentResult);
                 }
-                const assignmentResult = new Assignment(
-                    name.trim(),
-                    link,
-                    assignmentType,
-                    this.folderLocation + "/" + name.trim()
-                );
-                assignments.push(assignmentResult);
             }
         }
         await page.close();
