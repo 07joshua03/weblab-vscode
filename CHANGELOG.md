@@ -2,6 +2,16 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.1]
+
+### Features
+- Added language detection (please let me know if any unknown language errors pop up)
+- Changed the way folders are created. This could introduce errors on specific filesystems with weird seperators/starters.
+
+### Other
+- Removed error on Test Results panel creation
+- Added some nice text to Test Results panel
+
 ## [0.2.0]
 
 ### Features

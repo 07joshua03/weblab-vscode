@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-import { posix } from 'path';
+import path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 
@@ -84,42 +84,13 @@ export class WebLabFs {
 		}
 	}
 
-	async createFile(fileLocation: string, data: string) {
-		if (!vscode.workspace.workspaceFolders) {
-			return vscode.window.showInformationMessage('No folder or workspace opened');
-		}
+	//TODO Test whether directory creation works correctly on all file systems
+	async createFile(fileUri: vscode.Uri, data: string) {
+		// Create possible parent directories
+		vscode.workspace.fs.createDirectory(vscode.Uri.parse(fileUri.fsPath.split(path.sep).slice(0,-1).join(path.sep)));
 
-		this.createParentFolders(fileLocation, true);
-		const folderUri = vscode.workspace.workspaceFolders[0].uri;
-		const fileUri = folderUri.with({ path: posix.join(folderUri.path, fileLocation) });
 		await vscode.workspace.fs.writeFile(fileUri, Buffer.from(data, 'utf8'));
-		// this.writeFile(vscode.Uri.parse(`weblabfs:/${fileLocation}`), Buffer.from(data), { create: true, overwrite: true });
 	}
-
-	createParentFolders(fileLocation: string, recursive: boolean) {
-		if (!vscode.workspace.workspaceFolders) {
-			return vscode.window.showInformationMessage('No folder or workspace opened');
-		}
-		const folderUri = vscode.workspace.workspaceFolders[0].uri;
-
-		if (recursive) {
-			let prevFolder = "";
-			fileLocation.split("/").slice(0, -1).forEach(folder => {
-				const folderLocation = prevFolder === "" ? folder : `${prevFolder}/${folder}`;
-				if (!(fs.existsSync(posix.join(folderUri.path, folderLocation)))) {
-					const dirUri = folderUri.with({ path: posix.join(folderUri.path, folderLocation) });
-					vscode.workspace.fs.createDirectory(dirUri);
-					// this.createDirectory(vscode.Uri.parse(`weblabfs:/${folderLocation}`));
-				}
-				prevFolder = folderLocation;
-			});
-		} else if (!(fs.existsSync(posix.join(folderUri.path, fileLocation.split("/").slice(0, -1).join("/"))))) {
-			const dirUri = folderUri.with({ path: posix.join(folderUri.path, fileLocation) });
-			vscode.workspace.fs.createDirectory(dirUri);
-			// this.createDirectory(vscode.Uri.parse(`weblabfs:/${fileLocation}`));
-		}
-	}
-
 
 	// --- lookup
 

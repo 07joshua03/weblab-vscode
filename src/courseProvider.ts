@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { BrowserProvider } from "./browserProvider";
 import { Locator, Page } from "playwright";
 import { open } from "fs";
+import { posix } from "path";
 export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
     private browserProvider: BrowserProvider;
 
@@ -91,17 +92,26 @@ abstract class TreeItem extends vscode.TreeItem {
 }
 
 export class Assignment extends TreeItem {
+    
     type: string;
+    language: string | undefined;
+    
     folderLocation: string;
+
+    /**
+     * Request data needed for submitting
+     */
     postData: string | undefined;
     splitHeader: string | undefined;
     requestHeader: { [key: string]: string } | undefined;
+    
 
     constructor(
         public readonly label: string,
         link: string,
         type: string,
-        folderLocation: string = ""
+        folderLocation: string = "",
+        language?: string
     ) {
         super(label, link, vscode.TreeItemCollapsibleState.None, type);
         this.description = type;
@@ -114,6 +124,9 @@ export class Assignment extends TreeItem {
             "command": "weblab-vscode.openAssignment",
             "arguments": [this]
         };
+        if(language) {
+            this.language = language;
+        }
     }
     getChildren(_browserManager: BrowserProvider): Promise<TreeItem[]> {
         return Promise.resolve([]);
@@ -123,6 +136,56 @@ export class Assignment extends TreeItem {
         this.postData = postData;
         this.splitHeader = splitHeader;
         this.requestHeader = requestHeader;
+    }
+
+    getSolutionUri(): vscode.Uri{
+        if (!vscode.workspace.workspaceFolders) {
+            vscode.window.showInformationMessage('No folder or workspace opened');
+            throw new Error("No folder or workspace opened");
+        }
+        const folderUri = vscode.workspace.workspaceFolders[0].uri;
+        const solutionFileName = this.getSolutionFileName();
+        const solutionUri = folderUri.with({ path: posix.join(folderUri.path, this.folderLocation, solutionFileName) });
+        return solutionUri;
+    }
+
+    getTestUri(): vscode.Uri{
+        if (!vscode.workspace.workspaceFolders) {
+            vscode.window.showInformationMessage('No folder or workspace opened');
+            throw new Error("No folder or workspace opened");
+        }
+        const folderUri = vscode.workspace.workspaceFolders[0].uri;
+        const testFileName = this.getTestFileName();
+        const testUri = folderUri.with({ path: posix.join(folderUri.path, this.folderLocation, testFileName) });
+        return testUri;
+    }
+
+    getSolutionFileName() {
+        if(!this.language) {
+            vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
+            return "solution.txt";
+        } else if(this.language.toLowerCase().startsWith("java")) {
+            return "Solution.java";
+        } else if(this.language.toLowerCase().startsWith("python")) {
+            return "solution.py";
+        } else {
+            vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
+            return "solution.txt";
+        }
+    }
+
+    getTestFileName() {
+        if(!this.language) {
+            vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
+            return "test.txt";
+        } else if(this.language.toLowerCase().startsWith("java")) {
+            return "TestSuite.java";
+        } else if(this.language.toLowerCase().startsWith("python")) {
+            return "test.py";
+        } else {
+            vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
+            return "test.txt";
+        }
     }
 }
 
@@ -203,6 +266,25 @@ class AssignmentFolder extends TreeItem {
                     .locator(
                         `div[id="${id}"]> div.row.assignment-row > div > a.navigate > span`
                     ).getAttribute("data-original-title") ?? "";
+                if(assignmentType.startsWith("Programming question")) {
+                    const regex = /Programming question \((.+)\)/g;
+                    const programmingLanguageRegex = regex.exec(assignmentType);
+                    if(!programmingLanguageRegex){
+                        vscode.window.showErrorMessage("Skipping assignment: "+ name + "\nProgramming question found, but no language detected: " + assignmentType);
+                        continue;
+                    }
+                    const programmingLanguage = programmingLanguageRegex[1];
+                    console.log(programmingLanguage);
+                    const assignmentResult = new Assignment(
+                        name.trim(),
+                        link,
+                        assignmentType,
+                        this.folderLocation + "/" + name.trim(),
+                        programmingLanguage
+                    );
+                    assignments.push(assignmentResult);
+
+                }
                 const assignmentResult = new Assignment(
                     name.trim(),
                     link,

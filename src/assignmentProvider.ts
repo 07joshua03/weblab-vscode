@@ -39,17 +39,11 @@ export class AssignmentProvider {
 
     registerOnSave() {
         vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {
-            if (!vscode.workspace.workspaceFolders) {
-                return vscode.window.showWarningMessage('No folder or workspace opened');
-            }
             if (!this.activeAssignment) {
                 return vscode.window.showWarningMessage("No active assignment found. Please select your assignment in the Sidebar before saving.");
-
             }
-            const folderUri = vscode.workspace.workspaceFolders[0].uri;
 
-
-            if (document.uri.fsPath === folderUri.with({ path: posix.join(folderUri.path, this.activeAssignment.folderLocation, "solution.java") }).fsPath || document.uri.fsPath === folderUri.with({ path: posix.join(folderUri.path, this.activeAssignment.folderLocation, "test.java") }).fsPath) {
+            if (document.uri.fsPath === this.activeAssignment.getSolutionUri().fsPath || document.uri.fsPath === this.activeAssignment.getTestUri().fsPath) {
                 await this.submitAssignment(this.activeAssignment);
                 vscode.window.showInformationMessage("Saved assignment!");
             } else {
@@ -128,19 +122,17 @@ export class AssignmentProvider {
 
         const [solutionFile, testFile] = await this.getAssignmentData(assignment.link);
 
-        const solutionLocation = assignment.folderLocation + "/" + "solution.java";
-        const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
+        const solutionUri = assignment.getSolutionUri();
         if (!this.webLabFs.fileExists(solutionUri) || sync) {
-            await this.webLabFs.createFile(solutionLocation, solutionFile);
-            console.log("File created: " + solutionLocation);
-        } else { console.log("File already exists: " + solutionLocation); };
+            await this.webLabFs.createFile(solutionUri, solutionFile);
+            console.log("File created: " + solutionUri.fsPath);
+        } else { console.log("File already exists: " + solutionUri.fsPath); };
 
-        const testLocation = assignment.folderLocation + "/" + "test.java";
-        const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
+        const testUri = assignment.getTestUri();
         if (!this.webLabFs.fileExists(testUri) || sync) {
-            await this.webLabFs.createFile(testLocation, testFile);
-            console.log("File created: " + testLocation);
-        } else { console.log("File already exists: " + testLocation); };
+            await this.webLabFs.createFile(testUri, testFile);
+            console.log("File created: " + testUri.fsPath);
+        } else { console.log("File already exists: " + testUri.fsPath); };
         await this.webLabFs.openFile(solutionUri);
         await this.openDescription(assignment);
         const [postData, splitHeader, requestHeader] = await this.getSubmitInfo(assignment);
@@ -203,11 +195,11 @@ export class AssignmentProvider {
             throw new Error("Assignment submit data not found");
         }
 
-        const solutionUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "solution.java") });
+        const solutionUri = assignment.getSolutionUri();
         const solutionFileData = await this.webLabFs.getFileData(solutionUri);
         const solutionNewData = this.injectNewData(assignment.postData, solutionFileData, assignment.splitHeader, 5);
 
-        const testUri = folderUri.with({ path: posix.join(folderUri.path, assignment.folderLocation, "test.java") });
+        const testUri = assignment.getTestUri();
         const testFileData = await this.webLabFs.getFileData(testUri);
         const testNewData = this.injectNewData(solutionNewData, testFileData, assignment.splitHeader, 6);
 
@@ -393,7 +385,7 @@ export class TestWebviewViewProvider implements vscode.WebviewViewProvider {
 
     resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
         this.view = webviewView;
-        webviewView.webview.html = "<div>hello</div>";
-        vscode.window.showErrorMessage("YES");
+        this.view.webview.html = "<div>Good luck with studying!</div></br><div>No test results available yet.</div>";
+
     }
 }

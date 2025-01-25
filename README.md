@@ -1,4 +1,4 @@
-# WebLab functionality for Visual Studio Code
+# WebLab for Visual Studio Code
 Tired of using the default WebLab editor? Me too! This extension brings the WebLab environment right into Visual Studio Code.
 
 ![Example of functionality of WebLab for Visual Studio Code](./resources/example.png)

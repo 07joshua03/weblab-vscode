@@ -19,7 +19,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	courseProvider.registerCommands(context);
 	const testWebviewViewProvider: TestWebviewViewProvider = new TestWebviewViewProvider();
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider("testWebviewView", testWebviewViewProvider));
-	testWebviewViewProvider.setHtml("<div>Good luck with studying!</div>");
 	const assignmentProvider = new AssignmentProvider(browserProvider, webLabFs, testWebviewViewProvider, context);
 
 	assignmentProvider.registerCommands(context);
