@@ -186,11 +186,6 @@ export class AssignmentProvider {
     }
 
     async submitAssignment(assignment: Assignment) {
-        if (!vscode.workspace.workspaceFolders) {
-            return vscode.window.showInformationMessage('No folder or workspace opened');
-        }
-        const folderUri = vscode.workspace.workspaceFolders[0].uri;
-
         if (!assignment.postData || !assignment.splitHeader) {
             throw new Error("Assignment submit data not found");
         }
