@@ -3,6 +3,9 @@ on:
     branches:
       - main
   pull_request:
+  release:
+    types:
+    - created
 
 jobs:
   build:
@@ -19,8 +22,18 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
-    - run: pnpm install
-    - run: xvfb-run -a pnpm test
+    - name: Install dependencies
+      run: pnpm install
+    - name: Test (Linux)
+      run: xvfb-run -a pnpm test
       if: runner.os == 'Linux'
-    - run: pnpm test
+    - name: Test (Non-linux)
+      run: pnpm test
       if: runner.os != 'Linux'
+    - name: Package
+      run: pnpm run package
+    - name: Publish
+      if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
+      run: npm run publish
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}

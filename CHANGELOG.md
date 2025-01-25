@@ -2,6 +2,11 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.2]
+
+### Other
+- Added publish pipeline
+
 ## [0.2.1]
 
 ### Features
