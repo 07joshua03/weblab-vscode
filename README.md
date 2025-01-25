@@ -18,7 +18,7 @@ Some notable features include:
 ## Installing
 
 > [!WARNING]
-> If you do not install the playwright prerequisites, the extension will not work.
+> If you do not install the playwright prerequisites, the extension will not work. The installation helper should remind you of this.
 
 Install the playwright prerequisites (you specifically need version 1.38.0) using NPM:
 ```sh

@@ -7,6 +7,7 @@
 import path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { BrowserProvider } from './browserProvider';
 
 export class File implements vscode.FileStat {
 
@@ -51,6 +52,12 @@ export type Entry = File | Directory;
 
 export class WebLabFs {
 
+	private browserProvider: BrowserProvider;
+
+	constructor(browserProvider: BrowserProvider) {
+		this.browserProvider = browserProvider;
+	}
+
 	registerCommands(context: vscode.ExtensionContext) {
 		context.subscriptions.push(vscode.commands.registerCommand("weblab-vscode.enableWebLab", async () => {
 			await this.initFileSystem(context);
@@ -59,6 +66,7 @@ export class WebLabFs {
 		context.subscriptions.push(vscode.commands.registerCommand("weblab-vscode.resetDefaultLocation", async () => {
 			context.globalState.update("weblab-vscode.defaultLocation", undefined);
 			vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', false);
+			vscode.window.showWarningMessage("Disabled WebLab");
 		}));
 	}
 
@@ -69,10 +77,10 @@ export class WebLabFs {
 			if (!defaultLocation) { // If also no default, just stop and disable WebLab
 				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', false);
 				return vscode.window.showWarningMessage("No workspace or folder opened and no default set. Disabling WebLab.");
-			} else { // If default is set, please open
+			} else { // If default is set, please opfen
 				vscode.window.showInformationMessage("Opening Default WebLab location");
 				vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse(defaultLocation) });
-				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+				await this.enableWebLab();
 				return;
 			}
 		} else { // If a workspace is open
@@ -83,13 +91,13 @@ export class WebLabFs {
 				if (decision.startsWith("Yes")) {
 					context.globalState.update("weblab-vscode.defaultLocation", folderUri.fsPath);
 				}
-				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+				await this.enableWebLab();
 			} else if (folderUri.fsPath !== defaultLocation) { // If workspace opened and default set
 				vscode.window.showInformationMessage("Opening default WebLab location");
 				vscode.workspace.updateWorkspaceFolders(0, 1, { uri: vscode.Uri.parse(defaultLocation) });
-				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+				await this.enableWebLab();;
 			} else {
-				vscode.window.showInformationMessage("Already in default WebLab location");
+				vscode.window.showWarningMessage("Already in default WebLab location, weblab should be enabled.");
 			}
 
 		}
@@ -100,10 +108,15 @@ export class WebLabFs {
 		if (!vscode.workspace.workspaceFolders || !defaultLocation) {
 			return;
 		} else if (defaultLocation === vscode.workspace.workspaceFolders[0].uri.fsPath) {
-			vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+			await this.enableWebLab();
 		}
 	}
 
+	async enableWebLab() {
+		await this.browserProvider.initializeBrowser();
+		vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+		vscode.window.showInformationMessage("Enabled WebLab!");
+	} 
 	// --- manage file contents
 
 	async openFile(file: vscode.Uri) {

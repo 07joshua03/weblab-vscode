@@ -2,6 +2,12 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.3]
+
+### Features
+- Added installation helper for playwright browser
+- Added default weblab location
+
 ## [0.2.2]
 
 ### Other
