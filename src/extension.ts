@@ -18,9 +18,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	const browserContext = await browser.newContext();
 	const browserProvider = new BrowserProvider(context, browserContext);
 	browserProvider.registerCommands(context);
-	vscode.commands.executeCommand('setContext', 'extensionEnabled', true);
 
 	const webLabFs = new WebLabFs();
+	webLabFs.registerCommands(context);
+
+	await webLabFs.enableIfDefault(context);
 
 	const courseProvider = new CourseProvider(browserProvider);
 	courseProvider.registerTreeDataProvider(context);

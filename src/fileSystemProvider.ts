@@ -52,19 +52,56 @@ export type Entry = File | Directory;
 export class WebLabFs {
 
 	registerCommands(context: vscode.ExtensionContext) {
-		// context.subscriptions.push(vscode.commands.registerCommand('weblab-vscode.initFs', _ => {
-		// 	while(!context.globalState.get("weblabDefaultLocation")){
-		// 		vscode.window.showWorkspaceFolderPick({}).then(value => {
+		context.subscriptions.push(vscode.commands.registerCommand("weblab-vscode.enableWebLab", async () => {
+			await this.initFileSystem(context);
+		}));
 
-		// 		});
-		// 		vscode.window.showInputBox({"placeHolder": "Enter the default location for the WebLab workspace", title: "WebLab Workspace Location"}).then(value => {
-		// 			if(value){
-		// 				context.globalState.update("weblabDefaultLocation", value);
-		// 			}
-		// 		});
-		// 	}
-		// 	vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse('weblabfs:/'), name: "WebLab Workspace" });
-		// }));
+		context.subscriptions.push(vscode.commands.registerCommand("weblab-vscode.resetDefaultLocation", async () => {
+			context.globalState.update("weblab-vscode.defaultLocation", undefined);
+			vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', false);
+		}));
+	}
+
+	async initFileSystem(context: vscode.ExtensionContext) {
+		if (!vscode.workspace.workspaceFolders) { // No workspace opened
+			// vscode.window.showInformationMessage('No folder or workspace opened');
+			const defaultLocation = context.globalState.get("weblab-vscode.defaultLocation") as string | undefined;
+			if (!defaultLocation) { // If also no default, just stop and disable WebLab
+				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', false);
+				return vscode.window.showWarningMessage("No workspace or folder opened and no default set. Disabling WebLab.");
+			} else { // If default is set, please open
+				vscode.window.showInformationMessage("Opening Default WebLab location");
+				vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse(defaultLocation) });
+				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+				return;
+			}
+		} else { // If a workspace is open
+			const folderUri = vscode.workspace.workspaceFolders[0].uri;
+			const defaultLocation = context.globalState.get("weblab-vscode.defaultLocation") as string | undefined;
+			if (!defaultLocation) { // And no default set
+				const decision = await vscode.window.showQuickPick(["Yes, set current workspace as default", "No, keep current default"], { title: "WebLab: Set current workspace as default?" }) ?? "No";
+				if (decision.startsWith("Yes")) {
+					context.globalState.update("weblab-vscode.defaultLocation", folderUri.fsPath);
+				}
+				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+			} else if (folderUri.fsPath !== defaultLocation) { // If workspace opened and default set
+				vscode.window.showInformationMessage("Opening default WebLab location");
+				vscode.workspace.updateWorkspaceFolders(0, 1, { uri: vscode.Uri.parse(defaultLocation) });
+				vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+			} else {
+				vscode.window.showInformationMessage("Already in default WebLab location");
+			}
+
+		}
+	}
+
+	async enableIfDefault(context: vscode.ExtensionContext) {
+		const defaultLocation = context.globalState.get("weblab-vscode.defaultLocation") as string | undefined;
+		if (!vscode.workspace.workspaceFolders || !defaultLocation) {
+			return;
+		} else if (defaultLocation === vscode.workspace.workspaceFolders[0].uri.fsPath) {
+			vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', true);
+		}
 	}
 
 	// --- manage file contents
@@ -87,7 +124,7 @@ export class WebLabFs {
 	//TODO Test whether directory creation works correctly on all file systems
 	async createFile(fileUri: vscode.Uri, data: string) {
 		// Create possible parent directories
-		vscode.workspace.fs.createDirectory(vscode.Uri.parse(fileUri.fsPath.split(path.sep).slice(0,-1).join(path.sep)));
+		vscode.workspace.fs.createDirectory(vscode.Uri.parse(fileUri.fsPath.split(path.sep).slice(0, -1).join(path.sep)));
 
 		await vscode.workspace.fs.writeFile(fileUri, Buffer.from(data, 'utf8'));
 	}

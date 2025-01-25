@@ -40,14 +40,16 @@
       "course-explorer": [
         {
           "id": "courses",
-          "name": "WebLab"
+          "name": "WebLab",
+          "when": "weblab-vscode.enabled"
         }
       ],
       "test-webview": [
         {
           "id": "testWebviewView",
           "name": "Test Results",
-          "type": "webview"
+          "type": "webview",
+          "when": "weblab-vscode.enabled"
         }
       ]
     },
@@ -75,6 +77,14 @@
       {
         "command": "weblab-vscode.login",
         "title": "Login to WebLab"
+      },
+      {
+        "command": "weblab-vscode.enableWebLab",
+        "title": "Enable WebLab"
+      },
+      {
+        "command": "weblab-vscode.resetDefaultLocation",
+        "title": "Reset WebLab Default location"
       },
       {
         "command": "weblab-vscode.showCourses",
