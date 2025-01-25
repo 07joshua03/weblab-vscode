@@ -3,7 +3,7 @@ import { Browser, chromium, Locator } from "playwright";
 import { CourseProvider } from "./courseProvider";
 import { BrowserProvider } from "./browserProvider";
 import { WebLabFs } from "./fileSystemProvider";
-import { AssignmentProvider, TestWebviewViewProvider } from "./assignmentProvider";
+import { AssignmentProvider } from "./assignmentProvider";
 
 export async function activate(context: vscode.ExtensionContext) {
 	vscode.commands.executeCommand('setContext', 'weblab-vscode.enabled', false);
@@ -18,10 +18,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	courseProvider.registerTreeDataProvider(context);
 	courseProvider.registerCommands(context);
 
-	const testWebviewViewProvider: TestWebviewViewProvider = new TestWebviewViewProvider();
-	context.subscriptions.push(vscode.window.registerWebviewViewProvider("testWebviewView", testWebviewViewProvider));
-	const assignmentProvider = new AssignmentProvider(browserProvider, webLabFs, testWebviewViewProvider, context);
-
+	const assignmentProvider = new AssignmentProvider(browserProvider, webLabFs, context);
+	assignmentProvider.registerWebviewViewProviders(context);
 	assignmentProvider.registerCommands(context);
 	assignmentProvider.registerOnSave();
 

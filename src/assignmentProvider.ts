@@ -11,12 +11,12 @@ export class AssignmentProvider {
     private activeAssignment: Assignment | undefined;
     private userTestButton: vscode.StatusBarItem;
     private specTestButton: vscode.StatusBarItem;
-    private testWebviewViewProvider: TestWebviewViewProvider;
+    private testWebviewViewProvider: TestWebviewViewProvider | undefined;
+    private descriptionWebviewViewProvider: DescriptionWebviewViewProvider | undefined;
 
-    constructor(browserProvider: BrowserProvider, webLabFs: WebLabFs, testWebviewViewProvider: TestWebviewViewProvider, context: vscode.ExtensionContext) {
+    constructor(browserProvider: BrowserProvider, webLabFs: WebLabFs, context: vscode.ExtensionContext) {
         this.browserProvider = browserProvider;
         this.webLabFs = webLabFs;
-        this.testWebviewViewProvider = testWebviewViewProvider;
         const [a, b] = this.registerActionButtons(context);
         this.userTestButton = a;
         this.specTestButton = b;
@@ -35,6 +35,15 @@ export class AssignmentProvider {
         // specTestButton.show();
         context.subscriptions.push(specTestButton);
         return [userTestButton, specTestButton];
+    }
+
+    registerWebviewViewProviders(context: vscode.ExtensionContext) {
+        this.testWebviewViewProvider = new TestWebviewViewProvider();
+	    context.subscriptions.push(vscode.window.registerWebviewViewProvider("testWebviewView", this.testWebviewViewProvider));
+
+        this.descriptionWebviewViewProvider = new DescriptionWebviewViewProvider();
+	    context.subscriptions.push(vscode.window.registerWebviewViewProvider("descriptionWebviewView", this.descriptionWebviewViewProvider));
+        vscode.commands.executeCommand('setContext', 'weblab-vscode.showDescriptionWebview', false);
     }
 
     registerOnSave() {
@@ -219,16 +228,20 @@ export class AssignmentProvider {
 
         const descriptionHTML = await page.locator("div.assignment-text").innerHTML();
 
-        const panel = vscode.window.createWebviewPanel(
-            "assignmentDescription",
-            "Assignment Description",
-            {
-                viewColumn: vscode.ViewColumn.Beside,
-                preserveFocus: true
-            },
-            {}
-        );
-        panel.webview.html = descriptionHTML;
+        // const panel = vscode.window.createWebviewPanel(
+        //     "assignmentDescription",
+        //     "Assignment Description",
+        //     {
+        //         viewColumn: vscode.ViewColumn.Beside,
+        //         preserveFocus: true
+        //     },
+        //     {}
+        // );
+        // panel.webview.html = descriptionHTML;
+        if(this.descriptionWebviewViewProvider){
+            this.descriptionWebviewViewProvider.setHtml(descriptionHTML);
+            vscode.commands.executeCommand('setContext', 'weblab-vscode.showDescriptionWebview', true);
+        }
     }
 
     async yourTest(assignment: Assignment) {
@@ -279,7 +292,9 @@ export class AssignmentProvider {
             if (!(dataJson[1]["value"] as string).startsWith("updateJobTimeout")) {
                 testResultsGotten = true;
             }
-            this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+            if(this.testWebviewViewProvider){
+                this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+            }
         }
 
         await page.close();
@@ -334,7 +349,9 @@ export class AssignmentProvider {
             if (!(dataJson[1]["value"] as string).startsWith("updateJobTimeout")) {
                 testResultsGotten = true;
             }
-            this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+            if(this.testWebviewViewProvider){
+                this.testWebviewViewProvider.setHtml(dataJson[1]["value"]);
+            }
         }
 
         await page.close();
@@ -385,5 +402,23 @@ export class TestWebviewViewProvider implements vscode.WebviewViewProvider {
         this.view = webviewView;
         this.view.webview.html = "<div>Good luck with studying!</div></br><div>No test results available yet.</div>";
 
+    }
+}
+
+export class DescriptionWebviewViewProvider implements vscode.WebviewViewProvider {
+    private view?: vscode.WebviewView;
+    private html: string = "<div>Good luck with studying!</div></br><div>No description available yet.</div>"; 
+
+    setHtml(html: string) {
+        this.html = html;
+        if (this.view) {
+            this.view.webview.html = html;
+            this.view.show();
+        }
+    }
+
+    resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
+        this.view = webviewView;
+        this.view.webview.html = this.html;
     }
 }

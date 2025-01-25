@@ -42,6 +42,12 @@
           "id": "courses",
           "name": "WebLab",
           "when": "weblab-vscode.enabled"
+        },
+        {
+          "id": "descriptionWebviewView",
+          "name": "Assignment Description",
+          "type": "webview",
+          "when": "weblab-vscode.showDescriptionWebview"
         }
       ],
       "test-webview": [
@@ -70,6 +76,10 @@
         {
           "command": "weblab-vscode.specTest",
           "when": "view == courses && viewItem == assignment"
+        },
+        {
+          "command": "weblab-vscode.openAssignmentInBrowser",
+          "when": "view == courses && viewItem == assignment"
         }
       ]
     },
@@ -97,6 +107,10 @@
       {
         "command": "weblab-vscode.openAssignment",
         "title": "Open WebLab assignment"
+      },
+      {
+        "command": "weblab-vscode.openAssignmentInBrowser",
+        "title": "Open in browser"
       },
       {
         "command": "weblab-vscode.syncAssignment",
