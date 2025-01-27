@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { BrowserProvider } from "./browserProvider";
 import { Locator, Page } from "playwright";
 import { open } from "fs";
-import { posix } from "path";
+import path, { posix } from "path";
 export class CourseProvider implements vscode.TreeDataProvider<TreeItem> {
     private browserProvider: BrowserProvider;
 
@@ -258,7 +258,7 @@ class AssignmentFolder extends TreeItem {
                     id,
                     link,
                     this,
-                    this.folderLocation + "/" + this.label
+                    this.folderLocation + path.sep + name.trim()
                 );
                 assignments.push(assignmentResult);
             } else {
@@ -279,7 +279,7 @@ class AssignmentFolder extends TreeItem {
                         name.trim(),
                         link,
                         assignmentType,
-                        this.folderLocation + "/" + name.trim(),
+                        this.folderLocation + path.sep + name.trim(),
                         programmingLanguage
                     );
                     assignments.push(assignmentResult);
@@ -289,7 +289,7 @@ class AssignmentFolder extends TreeItem {
                         name.trim(),
                         link,
                         assignmentType,
-                        this.folderLocation + "/" + name.trim()
+                        this.folderLocation + path.sep + name.trim()
                     );
                     assignments.push(assignmentResult);
                 }
@@ -344,7 +344,7 @@ class Course extends TreeItem {
                 assignmentFolderId,
                 assignmentFolderLink,
                 null,
-                this.label.replace(":", "")
+                this.label.replace(":", "") + path.sep + assignmentFolderName.trim()
             );
             assignments.push(assignmentResult);
         }
