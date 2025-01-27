@@ -113,6 +113,10 @@
         "title": "Open in browser"
       },
       {
+        "command": "weblab-vscode.openDescriptionPanel",
+        "title": "Open assignment description in panel"
+      },
+      {
         "command": "weblab-vscode.syncAssignment",
         "title": "Sync WebLab assignment",
         "icon": {

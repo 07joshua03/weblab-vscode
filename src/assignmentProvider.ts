@@ -132,6 +132,13 @@ export class AssignmentProvider {
             }
         );
         context.subscriptions.push(specTestActive);
+
+        const openDescriptionPanel = vscode.commands.registerCommand("weblab-vscode.openDescriptionPanel", () => {
+            if(this.descriptionWebviewViewProvider){
+                this.descriptionWebviewViewProvider.openInPanel();
+            }
+        });
+        context.subscriptions.push(openDescriptionPanel);
     }
 
     async openAssignment(assignment: Assignment, sync: boolean = false) {
@@ -415,18 +422,37 @@ export class TestWebviewViewProvider implements vscode.WebviewViewProvider {
 
 export class DescriptionWebviewViewProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
+    private prefixHtml: string = `<a href="command:weblab-vscode.openDescriptionPanel">Show description in panel</a>`;
     private html: string = "<div>Good luck with studying!</div></br><div>No description available yet.</div>"; 
 
     setHtml(html: string) {
         this.html = html;
         if (this.view) {
-            this.view.webview.html = html;
+            this.view.webview.html = this.prefixHtml + html;
             this.view.show();
         }
     }
 
     resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
         this.view = webviewView;
-        this.view.webview.html = this.html;
+        this.view.webview.html = this.prefixHtml + this.html;
+        this.view.show();
+    }
+
+    openInPanel(){
+        const panel = vscode.window.createWebviewPanel(
+            'weblab-vscode.descriptionPanel',
+            'Assignment Description',
+            {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: true
+            },
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+                enableCommandUris: true,
+            }
+        );
+        panel.webview.html = this.html;
     }
 }
