@@ -2,6 +2,15 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.5]
+
+### Features
+- [Description] Description now opens by default in the sidebar
+- [Description] Added possibility to open description in panel
+
+## Fixes
+- [Filesystem] Fixed incorrect folder creation (subfolders >2 levels deep non-existent)
+
 ## [0.2.4]
 
 ### Fixes
