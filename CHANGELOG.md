@@ -2,6 +2,11 @@
 
 All notable changes to the "weblab-vscode" extension will be documented in this file.
 
+## [0.2.6]
+- [Sideview] Fixed loading of folders and assignments
+- Updated playwright fix version
+- Add reauthenticate command
+
 ## [0.2.5]
 
 ### Features
