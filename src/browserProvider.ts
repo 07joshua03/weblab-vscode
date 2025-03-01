@@ -37,7 +37,7 @@ export class BrowserProvider {
         if (result.startsWith("Yes")) {
             const terminal = vscode.window.createTerminal("Playwright Install Terminal");
             terminal.show(false);
-            terminal.sendText("npx playwright@1.38.0 install", true);
+            terminal.sendText("npx playwright@1.38 install", true);
             vscode.window.showInformationMessage("Please restart VS Code after installing Playwright browser");
         } else {
             vscode.window.showErrorMessage("Deactivating WebLab for VS Code");
@@ -52,6 +52,14 @@ export class BrowserProvider {
             }
         );
         context.subscriptions.push(login);
+
+        const reauthenticate = vscode.commands.registerCommand(
+            "weblab-vscode.reauthenticate",
+            async () => {
+                await this.reauth();
+            }
+        );
+        context.subscriptions.push(reauthenticate);
 
         const isLoggedIn = vscode.commands.registerCommand(
             "weblab-vscode.isLoggedIn",
@@ -72,6 +80,34 @@ export class BrowserProvider {
             }
         );
         context.subscriptions.push(openBrowser);
+    }
+
+    async reauth() {
+        let username: string | undefined =
+            undefined;
+        while (!username) {
+            username = await vscode.window.showInputBox({
+                placeHolder: "Enter your username",
+            });
+            this.context.globalState.update("username", username);
+        }
+        let password: string | undefined = undefined;
+        while (!password) {
+            password = await vscode.window.showInputBox({
+                placeHolder: "Enter your password",
+                password: true,
+            });
+            this.context.secrets.store("password", password ?? "");
+        }
+        const page = await this.getBrowserContext().newPage();
+        await page.goto("https://weblab.tudelft.nl/samlsignin");
+        await page.fill('input[name="username"]', username);
+        await page.fill('input[name="password"]', password);
+        await page.click('button[type="submit"]');
+        await page.waitForURL("https://weblab.tudelft.nl");
+        this.loggedIn = true;
+        await page.close();
+        return username;
     }
 
     async login(): Promise<string> {
