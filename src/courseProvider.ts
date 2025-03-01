@@ -168,6 +168,10 @@ export class Assignment extends TreeItem {
             return "Solution.java";
         } else if(this.language.toLowerCase().startsWith("python")) {
             return "solution.py";
+        } else if(this.language.toLowerCase().startsWith("haskell")) {
+            return "solution.hs";
+        } else if(this.language.toLowerCase().includes("scala")) {
+            return "solution.scala";
         } else {
             vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
             return "solution.txt";
@@ -182,6 +186,10 @@ export class Assignment extends TreeItem {
             return "TestSuite.java";
         } else if(this.language.toLowerCase().startsWith("python")) {
             return "test.py";
+        } else if(this.language.toLowerCase().startsWith("haskell")) {
+            return "test.hs";
+        } else if(this.language.toLowerCase().includes("scala")) {
+            return "test.scala";
         } else {
             vscode.window.showWarningMessage("Incompatible programming language found, please report at: https://github.com/07joshua03/weblab-vscode/issues \n Falling back to .txt");
             return "test.txt";
@@ -213,13 +221,16 @@ class AssignmentFolder extends TreeItem {
         if (this.parent) {
             await this.parent.openCollapsible(page);
         }
+        const loadRequest = page.waitForResponse("https://weblab.tudelft.nl/treenodeAssignment_StudentInCourse_Int_Bool");
         await page
             .locator(
                 `div[id="${this.locatorId}"] > div > div > a[submitid^="treenode"]`
             )
             .first()
             .click();
-        await page.waitForTimeout(200);
+        await loadRequest;
+        // await page.waitForTimeout(500);
+        // await page.waitForLoadState("networkidle");
     }
 
     async getChildren(browserManager: BrowserProvider): Promise<TreeItem[]> {
